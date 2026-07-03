@@ -1,0 +1,29 @@
+{
+  "name": "@netlium/lib",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Netlium Systems shared library package with utilities, authentication, and database clients.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@netlium/types": "workspace:*"
+  }
+}

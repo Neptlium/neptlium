@@ -19,9 +19,8 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "pnpm exec tsc -p tsconfig.json",
-    "check-types": "pnpm exec tsc -p tsconfig.json --noEmit",
-    "lint": "pnpm exec eslint -c ../config/eslint.config.mjs \"src/**/*.{ts,tsx}\" --max-warnings 0",
-    "format": "pnpm exec prettier --write \"src/**/*.{ts,tsx}\" \"README.md\""
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
