@@ -1,35 +1,15 @@
-import { supabaseBrowser } from "../supabase/browser";
-import type { User, Session as SupabaseSession } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 
-/**
- * Retrieve the current user session from the browser client.
- * Returns null if no active session exists.
- */
-export async function getSession(): Promise<SupabaseSession | null> {
-  const { data } = await supabaseBrowser.auth.getSession();
-  return data.session;
-}
+type AuthEvent = "SIGNED_IN" | "SIGNED_OUT" | "TOKEN_REFRESHED" | "USER_UPDATED";
 
-/**
- * Retrieve the authenticated user from the browser client.
- * Returns null if not authenticated.
- */
-export async function getUser(): Promise<User | null> {
-  const { data } = await supabaseBrowser.auth.getUser();
-  return data.user;
-}
+export function createSessionHandler() {
+  return async (_event: AuthEvent | unknown, session: Session | null) => {
+    if (!session) return;
 
-/**
- * Listen for authentication state changes.
- * Useful for updating UI when user logs in/out.
- */
-export function onAuthStateChange(
-  callback: (user: User | null) => void
-) {
-  const { data } = supabaseBrowser.auth.onAuthStateChange(
-    async (_event, session) => {
-      callback(session?.user || null);
-    }
-  );
-  return data.subscription;
+    // safe placeholder hook for now
+    console.log("session updated:", {
+      user: session.user?.id,
+      event: _event
+    });
+  };
 }
