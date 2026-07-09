@@ -1,6 +1,7 @@
 {
   "extends": "../../packages/config/tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "rootDir": "./",
     "outDir": "./.next",
     "jsx": "preserve",

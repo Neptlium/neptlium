@@ -13,21 +13,29 @@ import React from "react";
 export interface AppShellProps {
   readonly children: React.ReactNode;
   readonly sidebar?: React.ReactNode;
+  readonly header?: React.ReactNode;
 }
 
-export function AppShell({ children, sidebar }: AppShellProps): React.ReactElement {
+export function AppShell({ children, sidebar, header }: AppShellProps): React.ReactElement {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 border-r border-slate-800 bg-slate-900 p-4">
-        <div className="mb-8 text-lg font-semibold tracking-tight">Netlium</div>
-        {sidebar && <nav className="space-y-2">{sidebar}</nav>}
+    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col md:flex-row">
+      {/* Sidebar Navigation — horizontal bar on small screens, vertical rail on md+ */}
+      <aside className="w-full shrink-0 border-b border-slate-800 bg-slate-900 p-4 md:w-64 md:border-b-0 md:border-r">
+        <div className="mb-4 text-lg font-semibold tracking-tight md:mb-8">Netlium</div>
+        {sidebar && (
+          <nav className="flex gap-2 overflow-x-auto md:block md:space-y-2 md:overflow-visible">
+            {sidebar}
+          </nav>
+        )}
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col bg-slate-950 p-6 overflow-auto">
-        <div className="mx-auto w-full max-w-7xl">{children}</div>
-      </main>
+      {/* Header + Main Content */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {header}
+        <main className="flex-1 overflow-auto bg-slate-950 p-6">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

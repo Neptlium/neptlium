@@ -1,9 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "./apps/web" },
     { "path": "./apps/app" },
-    { "path": "./apps/admin" },
     { "path": "./packages/ui" },
     { "path": "./packages/lib" },
     { "path": "./packages/types" }

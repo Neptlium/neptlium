@@ -1,10 +1,4 @@
-/**
- * @netlium/ui — Institutional UI System
- *
- * Provides the core UI components and shell for the platform:
- * - AppShell: Base layout container
- * - Design tokens and theming
- * - Institutional UI patterns
- */
-
-export * from "./shell/AppShell";
+export * from "./components";
+export * from "./layouts";
+export * from "./theme";
+export * from "./shell";

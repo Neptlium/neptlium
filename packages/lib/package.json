@@ -11,6 +11,16 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.2"
+    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/ssr": "^0.12.0"
+  },
+  "peerDependencies": {
+    "next": "^16.0.0"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./supabase/server": "./src/supabase/server.ts",
+    "./supabase/middleware": "./src/supabase/middleware.ts",
+    "./supabase/admin": "./src/supabase/admin.ts"
   }
 }
