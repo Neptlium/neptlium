@@ -1,6 +1,5 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@netlium/lib/supabase/admin";
 import { createSupabaseServerClient } from "@netlium/lib/supabase/server";
 import { isOrganizationPurpose, provisioningPayloadSchema, type ProvisioningPayload } from "@netlium/lib";
 import { requireUser } from "@/lib/auth";
@@ -8,17 +7,18 @@ import { requireUser } from "@/lib/auth";
 export type ProvisioningResult = { readonly ok: true } | { readonly ok: false; readonly error: string };
 
 /**
- * Finalizes account opening: assigns the default role, persists the
- * collected profile (branching into `organizations` for every non-individual
- * Purpose, so that identity isn't duplicated across profile rows), then
- * provisions the portfolio and wallet the Provisioning step's copy already
- * promises exist. Role assignment happens first — provisioned_at only
- * becomes non-null once a role exists, since supabase-js has no cross-table
- * transaction primitive and a completed provisioning state should never
- * imply a missing role.
+ * Finalizes account opening by calling the provision_account() database
+ * function, which wraps all provisioning steps (role assignment, organization
+ * creation, portfolio creation, wallet creation, profile update) in a single
+ * database transaction. provisioned_at is written last by the DB function, so
+ * any failure before that point leaves it NULL and the account in a safely
+ * retryable "not yet provisioned" state.
+ *
+ * The function is SECURITY DEFINER and verifies auth.uid() server-side, so
+ * the user can only provision their own account.
  */
 export async function submitProvisioning(input: ProvisioningPayload): Promise<ProvisioningResult> {
-  const user = await requireUser();
+  await requireUser();
 
   const parsed = provisioningPayloadSchema.safeParse(input);
   if (!parsed.success) {
@@ -26,101 +26,35 @@ export async function submitProvisioning(input: ProvisioningPayload): Promise<Pr
   }
 
   const data = parsed.data;
-  const admin = createSupabaseAdminClient();
-
-  const { data: existingRole } = await admin
-    .from("user_roles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!existingRole) {
-    const { error: roleError } = await admin.from("user_roles").insert({ user_id: user.id, role: "user" });
-    if (roleError) {
-      return { ok: false, error: "Unable to provision account access. Please try again." };
-    }
-  }
-
   const supabase = await createSupabaseServerClient();
-  const now = new Date().toISOString();
+  const isOrg = isOrganizationPurpose(data.investorType);
 
-  let organizationId: string | null = null;
-  if (isOrganizationPurpose(data.investorType)) {
-    const { data: organization, error: organizationError } = await supabase
-      .from("organizations")
-      .insert({
-        owner_id: user.id,
-        name: data.companyName,
-        role: data.role,
-        website: data.website || null,
-        industry: data.industry,
-        country: data.country,
-        organization_size: data.organizationSize,
-        aum_range: data.aumRange || null
-      })
-      .select("id")
-      .single();
+  const { error } = await supabase.rpc("provision_account", {
+    p_investor_type: data.investorType,
+    p_purpose: data.purpose,
+    p_first_name: data.firstName,
+    p_last_name: data.lastName,
+    p_residence_country: data.residenceCountry,
+    p_compliance_acknowledged_at: new Date().toISOString(),
 
-    if (organizationError || !organization) {
-      return { ok: false, error: "Unable to save your organization profile. Please try again." };
-    }
-    organizationId = organization.id;
-  }
+    // Individual-only fields
+    p_primary_objective: data.primaryObjective ?? null,
+    p_investment_experience: data.investmentExperience ?? null,
+    p_preferred_currency: data.preferredCurrency ?? null,
+    p_risk_preference: data.riskPreference ?? null,
 
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      first_name: data.firstName,
-      last_name: data.lastName,
-      full_name: `${data.firstName} ${data.lastName}`.trim(),
-      country: data.residenceCountry,
-      investor_type: data.investorType,
-      purpose: data.purpose,
-      organization_id: organizationId,
-      primary_objective: data.primaryObjective ?? null,
-      investment_experience: data.investmentExperience ?? null,
-      preferred_currency: data.preferredCurrency ?? null,
-      risk_preference: data.riskPreference ?? null,
-      compliance_status: "active",
-      compliance_acknowledged_at: now,
-      provisioned_at: now
-    })
-    .eq("id", user.id);
+    // Organization fields — only populated for non-individual types
+    p_org_name: isOrg ? (data.companyName ?? null) : null,
+    p_org_role: isOrg ? (data.role ?? null) : null,
+    p_org_website: isOrg ? (data.website || null) : null,
+    p_org_industry: isOrg ? (data.industry ?? null) : null,
+    p_org_country: isOrg ? (data.country ?? null) : null,
+    p_org_size: isOrg ? (data.organizationSize ?? null) : null,
+    p_aum_range: isOrg ? (data.aumRange || null) : null
+  });
 
-  if (profileError) {
+  if (error) {
     return { ok: false, error: "Unable to finalize your account. Please try again." };
-  }
-
-  const { data: existingPortfolio } = await admin
-    .from("investment_portfolios")
-    .select("id")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-
-  const portfolioId =
-    existingPortfolio?.id ??
-    (
-      await admin
-        .from("investment_portfolios")
-        .insert({ profile_id: user.id })
-        .select("id")
-        .single()
-    ).data?.id;
-
-  if (!portfolioId) {
-    return { ok: false, error: "Unable to provision your portfolio. Please try again." };
-  }
-
-  const { data: existingWallet } = await admin.from("wallets").select("id").eq("profile_id", user.id).maybeSingle();
-
-  if (!existingWallet) {
-    const { error: walletError } = await admin
-      .from("wallets")
-      .insert({ portfolio_id: portfolioId, profile_id: user.id, provider: "internal" });
-
-    if (walletError) {
-      return { ok: false, error: "Unable to provision your wallet. Please try again." };
-    }
   }
 
   return { ok: true };
