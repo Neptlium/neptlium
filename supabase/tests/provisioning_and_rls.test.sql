@@ -9,10 +9,23 @@
 --   supabase test db
 --
 -- Requires pgTAP: https://pgtap.org/
+--
+-- Test count breakdown:
+--   Tests  1-2  : handle_new_user trigger
+--   Tests  3-9  : individual account provisioning (idempotency)
+--   Tests 10-11 : organization provisioning
+--   Tests 12    : RLS — cross-user wallet read blocked
+--   Tests 13    : RLS — direct INSERT into wallet_transactions blocked
+--   Tests 14    : RLS — direct INSERT into custody_addresses blocked
+--   Tests 15-16 : privilege — anon cannot call privileged functions
+--   Tests 17-19 : ON CONFLICT target — user_roles uses (user_id, role)
+--   Tests 20-23 : withdrawal validation — zero, negative, blank fields
+--   Tests 24-25 : withdrawal authorization — wrong wallet, cross-user
+--   Tests 26-28 : provision_account input validation
 -- ---------------------------------------------------------------------------
 
 begin;
-select plan(17);
+select plan(28);
 
 -- =========================================================================
 -- Helper: create a test user (bypasses email confirmation)
@@ -214,6 +227,178 @@ select throws_ok(
   $$ select public.confirm_crypto_deposit(gen_random_uuid(), 'USD', 'WIRE', 9999, 'hash'); $$,
   null, null,
   'anon cannot execute confirm_crypto_deposit'
+);
+
+-- =========================================================================
+-- 8. ON CONFLICT target correctness: user_roles uses (user_id, role)
+--
+-- Rationale: user_roles has UNIQUE (user_id, role), NOT UNIQUE (user_id).
+-- A second insert with the same (user_id, role) must silently succeed;
+-- an insert with the same user_id but a different role must create a row.
+-- If ON CONFLICT (user_id) were used PostgreSQL would raise
+-- "there is no unique or exclusion constraint matching the ON CONFLICT
+-- specification". This block verifies the correct composite target is used.
+-- =========================================================================
+
+set local role authenticated;
+set local "request.jwt.claims" to '{"sub":"11111111-0000-0000-0000-000000000001","role":"authenticated"}';
+
+-- Test 17: inserting the same (user_id, role) again does nothing (idempotent)
+select lives_ok(
+  $$
+    insert into public.user_roles (user_id, role)
+    values ('11111111-0000-0000-0000-000000000001', 'user')
+    on conflict (user_id, role) do nothing;
+  $$,
+  'ON CONFLICT (user_id, role) DO NOTHING is accepted by the constraint'
+);
+
+select is(
+  (select count(*)::int from public.user_roles
+   where user_id = '11111111-0000-0000-0000-000000000001' and role = 'user'),
+  1,
+  'no duplicate user_role row after idempotent insert'
+);
+
+-- Test 19: inserting (user_id, different_role) creates a second row
+select lives_ok(
+  $$
+    insert into public.user_roles (user_id, role)
+    values ('11111111-0000-0000-0000-000000000001', 'admin')
+    on conflict (user_id, role) do nothing;
+  $$,
+  'different role for same user_id inserts successfully'
+);
+
+-- =========================================================================
+-- 9. request_wallet_withdrawal: input validation
+-- =========================================================================
+
+set local "request.jwt.claims" to '{"sub":"11111111-0000-0000-0000-000000000001","role":"authenticated"}';
+
+-- Test 20: zero amount must be rejected
+select throws_ok(
+  $$
+    select public.request_wallet_withdrawal(
+      (select id from public.wallets where profile_id = '11111111-0000-0000-0000-000000000001'),
+      'USD', 'WIRE', 0, 'DEST-ACCOUNT'
+    );
+  $$,
+  'P0005', null,
+  'request_wallet_withdrawal rejects zero amount'
+);
+
+-- Test 21: negative amount must be rejected
+select throws_ok(
+  $$
+    select public.request_wallet_withdrawal(
+      (select id from public.wallets where profile_id = '11111111-0000-0000-0000-000000000001'),
+      'USD', 'WIRE', -100, 'DEST-ACCOUNT'
+    );
+  $$,
+  'P0005', null,
+  'request_wallet_withdrawal rejects negative amount'
+);
+
+-- Test 22: blank asset must be rejected
+select throws_ok(
+  $$
+    select public.request_wallet_withdrawal(
+      (select id from public.wallets where profile_id = '11111111-0000-0000-0000-000000000001'),
+      '   ', 'WIRE', 100, 'DEST-ACCOUNT'
+    );
+  $$,
+  'P0005', null,
+  'request_wallet_withdrawal rejects blank asset'
+);
+
+-- Test 23: blank destination must be rejected
+select throws_ok(
+  $$
+    select public.request_wallet_withdrawal(
+      (select id from public.wallets where profile_id = '11111111-0000-0000-0000-000000000001'),
+      'USD', 'WIRE', 100, '   '
+    );
+  $$,
+  'P0005', null,
+  'request_wallet_withdrawal rejects blank destination'
+);
+
+-- =========================================================================
+-- 10. request_wallet_withdrawal: authorization
+-- =========================================================================
+
+-- Test 24: non-existent wallet is rejected
+select throws_ok(
+  $$
+    select public.request_wallet_withdrawal(
+      gen_random_uuid(),
+      'USD', 'WIRE', 100, 'DEST-ACCOUNT'
+    );
+  $$,
+  'P0002', null,
+  'request_wallet_withdrawal rejects unknown wallet_id'
+);
+
+-- Test 25: user 1 cannot withdraw from user 2's wallet (cross-user)
+select throws_ok(
+  $$
+    select public.request_wallet_withdrawal(
+      (select id from public.wallets where profile_id = '22222222-0000-0000-0000-000000000002'),
+      'USD', 'WIRE', 100, 'DEST-ACCOUNT'
+    );
+  $$,
+  'P0003', null,
+  'request_wallet_withdrawal denies access to another user wallet'
+);
+
+-- =========================================================================
+-- 11. provision_account: input validation
+-- =========================================================================
+
+-- Insert test user 3 (validation tests, never fully provisioned)
+insert into auth.users (id, email, email_confirmed_at, created_at, updated_at)
+values ('33333333-0000-0000-0000-000000000003', 'validate@example.com', now(), now(), now());
+
+set local "request.jwt.claims" to '{"sub":"33333333-0000-0000-0000-000000000003","role":"authenticated"}';
+
+-- Test 26: invalid investor_type is rejected
+select throws_ok(
+  $$
+    select public.provision_account(
+      'hacker', 'Bad type', 'Eve', 'Mal', 'US', now(),
+      null, null, null, null,
+      null, null, null, null, null, null, null
+    );
+  $$,
+  'P0005', null,
+  'provision_account rejects unknown investor_type'
+);
+
+-- Test 27: blank first_name is rejected
+select throws_ok(
+  $$
+    select public.provision_account(
+      'individual', 'Personal wealth', '   ', 'Smith', 'US', now(),
+      'Growth', 'experienced', 'USD', 'balanced',
+      null, null, null, null, null, null, null
+    );
+  $$,
+  'P0005', null,
+  'provision_account rejects blank first_name'
+);
+
+-- Test 28: non-individual type without org_name is rejected
+select throws_ok(
+  $$
+    select public.provision_account(
+      'family_office', 'Multi-gen wealth', 'Bob', 'Jones', 'GB', now(),
+      null, null, null, null,
+      null, null, null, null, null, null, null
+    );
+  $$,
+  'P0005', null,
+  'provision_account rejects non-individual type without org_name'
 );
 
 select * from finish();

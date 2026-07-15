@@ -1,15 +1,9 @@
 -- ---------------------------------------------------------------------------
--- RLS policy hardening: organizations INSERT, wallet ledger write isolation
+-- RLS policy hardening: wallet ledger write isolation
 --
--- Three issues addressed here:
+-- Two issues addressed here:
 --
--- 1. organizations has SELECT and UPDATE owner policies but no INSERT policy.
---    The onboarding provisioning path (actions.ts) inserts organization rows
---    using the user's session client; without an INSERT policy, RLS blocks
---    that insert and provisioning fails for every non-individual account
---    type. Add a minimal owner-checks INSERT policy.
---
--- 2. wallet_transactions_insert_own and custody_addresses_insert_own allow
+-- 1. wallet_transactions_insert_own and custody_addresses_insert_own allow
 --    any authenticated browser to POST arbitrary ledger rows directly
 --    through PostgREST. For an institutional wallet ledger this is
 --    unacceptable — inserts must be mediated by server-side logic that
@@ -18,20 +12,17 @@
 --    SECURITY DEFINER RPC functions that are only callable by authenticated
 --    users and that enforce ownership before inserting.
 --
--- 3. Grant the new RPC functions to authenticated only (not anon, not PUBLIC).
+-- 2. Grant the new RPC functions to authenticated only (not anon, not PUBLIC).
+--
+-- NOTE: organizations_insert_own is intentionally NOT added here. Organization
+-- rows are created exclusively through provision_account() (SECURITY DEFINER),
+-- which handles INSERT server-side. Granting browser INSERT permission on
+-- organizations is unnecessary and increases the attack surface.
 -- ---------------------------------------------------------------------------
 
 
 -- -------------------------------------------------------------------------
--- 1. organizations: authenticated owner INSERT policy
--- -------------------------------------------------------------------------
-
-create policy "organizations_insert_own" on "public"."organizations"
-  for insert with check (auth.uid() = owner_id);
-
-
--- -------------------------------------------------------------------------
--- 2. Drop unsafe direct-insert policies on the wallet ledger tables
+-- 1. Drop unsafe direct-insert policies on the wallet ledger tables
 -- -------------------------------------------------------------------------
 
 drop policy if exists "wallet_transactions_insert_own" on "public"."wallet_transactions";
@@ -39,7 +30,10 @@ drop policy if exists "custody_addresses_insert_own" on "public"."custody_addres
 
 
 -- -------------------------------------------------------------------------
--- 3a. provision_deposit_address_for_wallet — server-validated deposit ref
+-- 2a. provision_deposit_address_for_wallet — server-validated deposit ref
+--
+-- Intended caller: authenticated (signed-in user only).
+-- ACL: REVOKE ALL FROM PUBLIC; REVOKE FROM anon; GRANT TO authenticated.
 --
 -- Generates an internal funding reference (NLM-XXXXXXXX) for the specified
 -- wallet after verifying the caller owns that wallet. Returns the new
@@ -58,7 +52,7 @@ create or replace function public.provision_deposit_address_for_wallet(
 returns jsonb
 language plpgsql
 security definer
-set search_path = 'public'
+set search_path = pg_catalog, public
 as $$
 declare
   v_caller     uuid := auth.uid();
@@ -72,9 +66,22 @@ begin
     raise exception 'authentication required' using errcode = 'P0001';
   end if;
 
+  -- Validate non-empty inputs.
+  if p_wallet_id is null then
+    raise exception 'wallet_id is required' using errcode = 'P0005';
+  end if;
+
+  if p_asset is null or trim(p_asset) = '' then
+    raise exception 'asset is required' using errcode = 'P0005';
+  end if;
+
+  if p_network is null or trim(p_network) = '' then
+    raise exception 'network is required' using errcode = 'P0005';
+  end if;
+
   -- Verify the wallet exists and belongs to the caller.
   select profile_id into v_profile_id
-    from wallets
+    from public.wallets
    where id = p_wallet_id;
 
   if not found then
@@ -90,7 +97,7 @@ begin
   v_reference := 'NLM-' || upper(substr(gen_random_uuid()::text, 1, 8));
   v_created_at := now();
 
-  insert into custody_addresses
+  insert into public.custody_addresses
     (wallet_id, profile_id, provider, asset, network, address, created_at)
   values
     (p_wallet_id, v_caller, 'internal', p_asset, p_network, v_reference, v_created_at)
@@ -107,20 +114,34 @@ begin
 end;
 $$;
 
--- Grant only to authenticated callers; no public/anon access.
-revoke all   on function public.provision_deposit_address_for_wallet(uuid, text, text) from public;
+-- Intended caller: authenticated (signed-in user only).
+-- Historical default-privilege grants may exist; revoke explicitly.
+revoke all     on function public.provision_deposit_address_for_wallet(uuid, text, text) from public;
+revoke execute on function public.provision_deposit_address_for_wallet(uuid, text, text) from anon;
 grant  execute on function public.provision_deposit_address_for_wallet(uuid, text, text) to authenticated;
 
 
 -- -------------------------------------------------------------------------
--- 3b. request_wallet_withdrawal — server-validated withdrawal entry
+-- 2b. request_wallet_withdrawal — server-validated withdrawal entry
 --
--- Inserts a pending withdrawal transaction for the specified wallet after
--- verifying the caller owns it. Returns the new wallet_transactions row as
--- JSON. The actual balance check and funds-reservation happen in the
--- TypeScript Server Action before this is called; this function enforces
--- only the ownership invariant so the DB can never receive a forged insert
--- even if the Server Action is bypassed.
+-- Intended caller: authenticated (signed-in user only).
+-- ACL: REVOKE ALL FROM PUBLIC; REVOKE FROM anon; GRANT TO authenticated.
+--
+-- Balance model: withdrawal is recorded as a PENDING transaction requiring
+-- operations approval before funds are released. The database does NOT
+-- atomically check the available balance because the current wallet_transactions
+-- ledger has no balance column and deriving an available balance across
+-- concurrent writes would require advisory locking beyond this function's
+-- scope. Withdrawals are therefore non-binding requests; operations staff
+-- must verify available balance before approving. DO NOT rely on this function
+-- alone to prevent over-withdrawal — that enforcement happens in the operations
+-- reconciliation step.
+--
+-- The database independently enforces:
+--   - authenticated caller
+--   - wallet ownership (caller must own the wallet)
+--   - amount > 0 and non-null
+--   - non-empty asset, network, destination
 --
 -- Called by InternalLedgerCustodyProvider.requestWithdrawal via
 -- supabase.rpc('request_wallet_withdrawal', ...).
@@ -136,7 +157,7 @@ create or replace function public.request_wallet_withdrawal(
 returns jsonb
 language plpgsql
 security definer
-set search_path = 'public'
+set search_path = pg_catalog, public
 as $$
 declare
   v_caller     uuid := auth.uid();
@@ -149,9 +170,31 @@ begin
     raise exception 'authentication required' using errcode = 'P0001';
   end if;
 
+  -- Validate required inputs independently of any browser/TypeScript checks.
+  if p_wallet_id is null then
+    raise exception 'wallet_id is required' using errcode = 'P0005';
+  end if;
+
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'amount must be greater than zero (got %)', coalesce(p_amount::text, 'null')
+      using errcode = 'P0005';
+  end if;
+
+  if p_asset is null or trim(p_asset) = '' then
+    raise exception 'asset is required' using errcode = 'P0005';
+  end if;
+
+  if p_network is null or trim(p_network) = '' then
+    raise exception 'network is required' using errcode = 'P0005';
+  end if;
+
+  if p_destination is null or trim(p_destination) = '' then
+    raise exception 'destination is required' using errcode = 'P0005';
+  end if;
+
   -- Verify the wallet exists and belongs to the caller.
   select profile_id into v_profile_id
-    from wallets
+    from public.wallets
    where id = p_wallet_id;
 
   if not found then
@@ -164,7 +207,7 @@ begin
 
   v_created_at := now();
 
-  insert into wallet_transactions
+  insert into public.wallet_transactions
     (wallet_id, profile_id, type, asset, network, amount, status, counterparty, created_at)
   values
     (p_wallet_id, v_caller, 'withdrawal', p_asset, p_network, p_amount, 'pending', p_destination, v_created_at)
@@ -184,6 +227,8 @@ begin
 end;
 $$;
 
--- Grant only to authenticated callers; no public/anon access.
-revoke all   on function public.request_wallet_withdrawal(uuid, text, text, numeric, text) from public;
+-- Intended caller: authenticated (signed-in user only).
+-- Historical default-privilege grants may exist; revoke explicitly.
+revoke all     on function public.request_wallet_withdrawal(uuid, text, text, numeric, text) from public;
+revoke execute on function public.request_wallet_withdrawal(uuid, text, text, numeric, text) from anon;
 grant  execute on function public.request_wallet_withdrawal(uuid, text, text, numeric, text) to authenticated;
