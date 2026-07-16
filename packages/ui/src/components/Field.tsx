@@ -2,12 +2,13 @@
 
 import {
   type InputHTMLAttributes,
+  type HTMLAttributes,
   type LabelHTMLAttributes,
   type ReactNode,
   type TextareaHTMLAttributes,
   forwardRef,
   useId,
-  useState
+  useState,
 } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "./utils/cn";
@@ -39,7 +40,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   { className, type, ...props },
-  ref
+  ref,
 ) {
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
@@ -47,7 +48,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const toggleId = `${generatedId}-toggle`;
 
   if (!isPassword) {
-    return <input ref={ref} type={type} className={cn(inputClasses, className)} {...props} />;
+    return (
+      <input
+        ref={ref}
+        type={type}
+        className={cn(inputClasses, className)}
+        {...props}
+      />
+    );
   }
 
   return (
@@ -63,9 +71,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         id={toggleId}
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Hide password" : "Show password"}
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-text-muted hover:text-text-secondary"
+        disabled={props.disabled}
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-text-muted hover:text-text-secondary focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-ring)] disabled:pointer-events-none"
       >
-        {visible ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+        {visible ? (
+          <EyeOff className="size-4" aria-hidden="true" />
+        ) : (
+          <Eye className="size-4" aria-hidden="true" />
+        )}
       </button>
     </div>
   );
@@ -73,23 +86,38 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { className, ...props },
-  ref
-) {
-  return <textarea ref={ref} className={cn(inputClasses, "min-h-24 resize-y", className)} {...props} />;
-});
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  function Textarea({ className, ...props }, ref) {
+    return (
+      <textarea
+        ref={ref}
+        className={cn(inputClasses, "min-h-24 resize-y", className)}
+        {...props}
+      />
+    );
+  },
+);
 
-export function FieldError({ children }: { readonly children?: ReactNode }) {
+export function FieldError({
+  children,
+  ...props
+}: { readonly children?: ReactNode } & HTMLAttributes<HTMLParagraphElement>) {
   if (!children) return null;
   return (
-    <p role="alert" className="text-body-sm text-danger">
+    <p role="alert" className="text-body-sm text-danger" {...props}>
       {children}
     </p>
   );
 }
 
-export function FieldHint({ children }: { readonly children?: ReactNode }) {
+export function FieldHint({
+  children,
+  ...props
+}: { readonly children?: ReactNode } & HTMLAttributes<HTMLParagraphElement>) {
   if (!children) return null;
-  return <p className="text-body-sm text-text-muted">{children}</p>;
+  return (
+    <p className="text-body-sm text-text-muted" {...props}>
+      {children}
+    </p>
+  );
 }

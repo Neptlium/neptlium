@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
 
   if (tokenHash && type) {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    const { data, error } = await supabase.auth.verifyOtp({
+      type,
+      token_hash: tokenHash,
+    });
 
     if (!error && data.user) {
       if (type === "signup") {
@@ -31,10 +34,11 @@ export async function GET(request: NextRequest) {
       }
       await recordTrustedDevice(supabase, data.user.id);
 
-      const destination = type === "recovery" ? "/update-password" : "/dashboard";
+      const destination =
+        type === "recovery" ? "/update-password" : "/dashboard";
       return NextResponse.redirect(new URL(destination, request.url));
     }
   }
 
-  return NextResponse.redirect(new URL("/login?error=confirmation_failed", request.url));
+  return NextResponse.redirect(new URL("/auth-error", request.url));
 }

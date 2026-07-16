@@ -2,7 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@netlium/lib/supabase/server";
-import { readRequiredField, resolveOrigin } from "./auth-utils";
+import {
+  isValidEmail,
+  meetsPasswordRequirements,
+  readRequiredField,
+  resolveOrigin,
+  safeInternalPath,
+} from "./auth-utils";
 import { createNotification } from "@netlium/lib";
 import { recordSecurityEvent } from "@/lib/security/events";
 import { recordTrustedDevice } from "@/lib/security/deviceCookie";
@@ -10,17 +16,19 @@ import type { AuthActionState } from "./schema";
 
 export async function login(
   _prevState: AuthActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AuthActionState> {
   const email = readRequiredField(formData, "email");
   const password = readRequiredField(formData, "password");
+  const next = safeInternalPath(readRequiredField(formData, "next"));
 
-  if (!email || !password) {
+  if (!isValidEmail(email)) {
     return {
-      error: "Email and password are required.",
+      error: "Enter a valid email address.",
       success: false,
     };
   }
+  if (!password) return { error: "Password is required.", success: false };
 
   const supabase = await createSupabaseServerClient();
 
@@ -31,7 +39,7 @@ export async function login(
 
   if (error || !data.user) {
     return {
-      error: "Invalid email or password.",
+      error: "The email or password is incorrect.",
       success: false,
     };
   }
@@ -39,23 +47,32 @@ export async function login(
   await recordSecurityEvent(supabase, data.user.id, "login");
   await recordTrustedDevice(supabase, data.user.id);
 
-  redirect("/dashboard");
+  if (next !== "/dashboard") redirect(next);
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("provisioned_at")
+    .eq("id", data.user.id)
+    .maybeSingle();
+  redirect(profile?.provisioned_at ? "/dashboard" : "/onboarding");
 }
 
 export async function signup(
   _prevState: AuthActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AuthActionState> {
   const email = readRequiredField(formData, "email");
   const password = readRequiredField(formData, "password");
   const confirmPassword = readRequiredField(formData, "confirmPassword");
 
-  if (!email || !password || !confirmPassword) {
+  if (!isValidEmail(email)) {
     return {
-      error: "All fields are required.",
+      error: "Enter a valid email address.",
       success: false,
     };
   }
+  if (!password || !confirmPassword)
+    return { error: "Password is required.", success: false };
 
   if (password !== confirmPassword) {
     return {
@@ -64,9 +81,9 @@ export async function signup(
     };
   }
 
-  if (password.length < 8) {
+  if (!meetsPasswordRequirements(password)) {
     return {
-      error: "Password must be at least 8 characters.",
+      error: "Password must meet all security requirements.",
       success: false,
     };
   }
@@ -87,7 +104,7 @@ export async function signup(
   // enumeration oracle. Both paths return the same "check your email" state.
   if (error && !/already registered/i.test(error.message)) {
     return {
-      error: "Unable to create your account. Please try again.",
+      error: "We couldn’t complete the request. Please try again.",
       success: false,
     };
   }
@@ -98,15 +115,43 @@ export async function signup(
   };
 }
 
+export async function resendVerification(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = readRequiredField(formData, "email");
+  if (!isValidEmail(email))
+    return { error: "Enter a valid email address.", success: false };
+
+  const supabase = await createSupabaseServerClient();
+  const origin = await resolveOrigin();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${origin}/auth/confirm` },
+  });
+
+  if (error) {
+    return {
+      error: /rate limit/i.test(error.message)
+        ? "Too many attempts. Please wait before trying again."
+        : "We couldn’t complete the request. Please try again.",
+      success: false,
+    };
+  }
+
+  return { error: null, success: true, message: "Verification email resent." };
+}
+
 export async function resetPassword(
   _prevState: AuthActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AuthActionState> {
   const email = readRequiredField(formData, "email");
 
-  if (!email) {
+  if (!isValidEmail(email)) {
     return {
-      error: "Email is required.",
+      error: "Enter a valid email address.",
       success: false,
     };
   }
@@ -118,9 +163,9 @@ export async function resetPassword(
     redirectTo: `${origin}/auth/confirm`,
   });
 
-  if (error) {
+  if (error && /rate limit/i.test(error.message)) {
     return {
-      error: "Unable to send reset email. Please try again.",
+      error: "Too many attempts. Please wait before trying again.",
       success: false,
     };
   }
@@ -133,14 +178,14 @@ export async function resetPassword(
 
 export async function updatePassword(
   _prevState: AuthActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AuthActionState> {
   const password = readRequiredField(formData, "password");
   const confirmPassword = readRequiredField(formData, "confirmPassword");
 
   if (!password || !confirmPassword) {
     return {
-      error: "All fields are required.",
+      error: "Password is required.",
       success: false,
     };
   }
@@ -152,9 +197,9 @@ export async function updatePassword(
     };
   }
 
-  if (password.length < 8) {
+  if (!meetsPasswordRequirements(password)) {
     return {
-      error: "Password must be at least 8 characters.",
+      error: "Password must meet all security requirements.",
       success: false,
     };
   }
@@ -164,7 +209,7 @@ export async function updatePassword(
 
   if (error || !data.user) {
     return {
-      error: "Unable to update your password. Please try again.",
+      error: "Your session has expired. Please sign in again.",
       success: false,
     };
   }
@@ -175,8 +220,8 @@ export async function updatePassword(
     data.user.id,
     "security",
     "Password changed",
-    "Your account password was updated."
+    "Your account password was updated.",
   );
 
-  redirect("/dashboard");
+  redirect("/password-updated");
 }

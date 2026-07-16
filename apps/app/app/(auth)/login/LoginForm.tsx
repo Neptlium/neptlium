@@ -4,10 +4,18 @@ import { useActionState, useState } from "react";
 import type { KeyboardEvent } from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
-import { Button, Field, FieldError, FieldHint, Input, Label } from "@netlium/ui";
+import {
+  Button,
+  Field,
+  FieldError,
+  FieldHint,
+  Input,
+  Label,
+} from "@netlium/ui";
 import { login } from "../actions";
 import { initialAuthActionState } from "../schema";
 import { AuthShell } from "../components/AuthShell";
+import { AuthNotice } from "../components/AuthNotice";
 
 const emailInputClass =
   "h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] pl-10 transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]";
@@ -15,9 +23,19 @@ const passwordInputClass =
   "h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]";
 const ctaClass = "h-12 w-full rounded-full text-[15px] font-semibold";
 
-export function LoginForm() {
-  const [state, formAction, isPending] = useActionState(login, initialAuthActionState);
+export function LoginForm({
+  next,
+  callbackFailed,
+}: {
+  readonly next?: string;
+  readonly callbackFailed?: boolean;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    login,
+    initialAuthActionState,
+  );
   const [capsLock, setCapsLock] = useState(false);
+  const [email, setEmail] = useState("");
 
   function trackCapsLock(event: KeyboardEvent<HTMLInputElement>) {
     setCapsLock(event.getModifierState?.("CapsLock") ?? false);
@@ -28,14 +46,23 @@ export function LoginForm() {
       <div className="flex flex-col gap-8">
         <div className="space-y-2">
           <h1 className="text-[36px] font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-[40px]">
-            Sign in to<br />Neptlium
+            Sign in to
+            <br />
+            Neptlium
           </h1>
           <p className="text-[15px] text-text-muted">
-            Access your institutional capital environment.
+            Access your institutional capital operating environment.
           </p>
         </div>
 
         <form action={formAction} className="flex flex-col gap-5">
+          <input type="hidden" name="next" value={next ?? ""} />
+          {callbackFailed && (
+            <AuthNotice>
+              This verification link is invalid or has expired. Request a new
+              link to continue.
+            </AuthNotice>
+          )}
           <Field>
             <Label htmlFor="login-email">Email address</Label>
             <div className="relative">
@@ -51,6 +78,9 @@ export function LoginForm() {
                 autoComplete="email"
                 inputMode="email"
                 placeholder="Enter your email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={isPending}
                 aria-invalid={Boolean(state.error)}
                 className={emailInputClass}
               />
@@ -74,21 +104,31 @@ export function LoginForm() {
               autoComplete="current-password"
               placeholder="Enter your password"
               onKeyUp={trackCapsLock}
+              disabled={isPending}
               aria-invalid={Boolean(state.error)}
+              aria-describedby="login-error"
               className={passwordInputClass}
             />
             {capsLock && <FieldHint>Caps Lock is on</FieldHint>}
-            <FieldError>{state.error}</FieldError>
+            <FieldError id="login-error">{state.error}</FieldError>
           </Field>
 
-          <Button type="submit" variant="cta" className={ctaClass} loading={isPending}>
-            Sign in →
+          <Button
+            type="submit"
+            variant="cta"
+            className={ctaClass}
+            loading={isPending}
+          >
+            {isPending ? "Signing in…" : "Sign In →"}
           </Button>
         </form>
 
         <p className="text-center text-[14px] text-text-muted">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-accent-primary hover:brightness-110">
+          <Link
+            href="/signup"
+            className="font-medium text-accent-primary hover:brightness-110"
+          >
             Create account
           </Link>
         </p>
@@ -96,4 +136,3 @@ export function LoginForm() {
     </AuthShell>
   );
 }
-

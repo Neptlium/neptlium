@@ -2,19 +2,28 @@
 
 import { useActionState, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { Button, Field, FieldError, FieldHint, Input, Label } from "@netlium/ui";
+import {
+  Button,
+  Field,
+  FieldError,
+  FieldHint,
+  Input,
+  Label,
+} from "@netlium/ui";
 import { updatePassword } from "../(auth)/actions";
 import { initialAuthActionState } from "../(auth)/schema";
 import { AuthShell } from "../(auth)/components/AuthShell";
-import { AuthCard } from "../(auth)/components/AuthCard";
-import { NeptliumMark } from "../(auth)/components/NeptliumMark";
+import { PasswordRequirements } from "../(auth)/components/PasswordRequirements";
 
 const inputClass =
   "h-10 border-[color:var(--color-border-whisper)] bg-surface-1 transition-[border-color,box-shadow] focus:border-accent-primary focus:shadow-[var(--shadow-focus-ring)]";
 const ctaClass = "h-11 w-full";
 
 export function UpdatePasswordForm() {
-  const [state, formAction, isPending] = useActionState(updatePassword, initialAuthActionState);
+  const [state, formAction, isPending] = useActionState(
+    updatePassword,
+    initialAuthActionState,
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -25,9 +34,9 @@ export function UpdatePasswordForm() {
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (password.length < 8) {
+    if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,}$/.test(password)) {
       event.preventDefault();
-      setPasswordError("Password must be at least 8 characters.");
+      setPasswordError("Password must meet all security requirements.");
       return;
     }
     if (password !== confirmPassword) {
@@ -40,64 +49,76 @@ export function UpdatePasswordForm() {
 
   return (
     <AuthShell>
-      <AuthCard>
-        <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <NeptliumMark size={36} />
-            <div className="space-y-1">
-              <h1 className="text-h4 font-semibold leading-tight tracking-tight text-text-primary">
-                Set a new password
-              </h1>
-              <p className="text-body-sm text-text-secondary">
-                Choose a new password for your Neptlium Account.
-              </p>
-            </div>
+      <form
+        action={formAction}
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-6"
+      >
+        <div className="space-y-2">
+          <h1 className="text-[36px] font-semibold leading-tight tracking-tight text-text-primary">
+            Create a new password
+          </h1>
+          <p className="text-[15px] text-text-muted">
+            Choose a strong password for your Neptlium account.
+          </p>
+        </div>
+
+        <Field>
+          <Label htmlFor="update-password">New password</Label>
+          <Input
+            id="update-password"
+            name="password"
+            type="password"
+            autoFocus
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              if (passwordError) setPasswordError(null);
+            }}
+            onKeyUp={trackCapsLock}
+            disabled={isPending}
+            aria-invalid={Boolean(passwordError)}
+            aria-describedby="update-password-requirements"
+            className={inputClass}
+          />
+          {capsLock && <FieldHint>Caps Lock is on</FieldHint>}
+          <div id="update-password-requirements">
+            <PasswordRequirements {...{ password }} />
           </div>
+        </Field>
 
-          <Field>
-            <Label htmlFor="update-password">New password</Label>
-            <Input
-              id="update-password"
-              name="password"
-              type="password"
-              autoFocus
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                if (passwordError) setPasswordError(null);
-              }}
-              onKeyUp={trackCapsLock}
-              aria-invalid={Boolean(passwordError)}
-              className={inputClass}
-            />
-            {capsLock && <FieldHint>Caps Lock is on</FieldHint>}
-            <FieldHint>At least 8 characters.</FieldHint>
-          </Field>
+        <Field>
+          <Label htmlFor="update-confirm-password">Confirm new password</Label>
+          <Input
+            id="update-confirm-password"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => {
+              setConfirmPassword(event.target.value);
+              if (passwordError) setPasswordError(null);
+            }}
+            disabled={isPending}
+            aria-invalid={Boolean(passwordError)}
+            aria-describedby="update-password-error"
+            className={inputClass}
+          />
+          <FieldError id="update-password-error">
+            {passwordError ?? state.error}
+          </FieldError>
+        </Field>
 
-          <Field>
-            <Label htmlFor="update-confirm-password">Confirm new password</Label>
-            <Input
-              id="update-confirm-password"
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(event) => {
-                setConfirmPassword(event.target.value);
-                if (passwordError) setPasswordError(null);
-              }}
-              aria-invalid={Boolean(passwordError)}
-              className={inputClass}
-            />
-            <FieldError>{passwordError ?? state.error}</FieldError>
-          </Field>
-
-          <Button type="submit" variant="accent" className={ctaClass} loading={isPending}>
-            Update password
-          </Button>
-        </form>
-      </AuthCard>
+        <Button
+          type="submit"
+          variant="cta"
+          className={ctaClass}
+          loading={isPending}
+        >
+          {isPending ? "Updating password…" : "Update Password →"}
+        </Button>
+      </form>
     </AuthShell>
   );
 }

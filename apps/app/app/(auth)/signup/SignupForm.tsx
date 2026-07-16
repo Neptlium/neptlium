@@ -1,16 +1,18 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { Mail, ArrowLeft, MailCheck } from "lucide-react";
-import { Button, Field, FieldError, FieldHint, Input, Label } from "@netlium/ui";
-import { signup } from "../actions";
+import { Button, Field, FieldError, Input, Label } from "@netlium/ui";
+import { resendVerification, signup } from "../actions";
 import { initialAuthActionState } from "../schema";
 import { AuthShell } from "../components/AuthShell";
+import { AuthNotice } from "../components/AuthNotice";
+import { PasswordRequirements } from "../components/PasswordRequirements";
 
-/** Basic RFC-5322-ish email pattern for client-side step validation */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_RE = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,}$/;
 
 const inputClass =
   "h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] pl-10 transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]";
@@ -20,13 +22,30 @@ const ctaClass = "h-12 w-full rounded-full text-[15px] font-semibold";
 type Step = "email" | "password";
 
 export function SignupForm() {
-  const [state, formAction, isPending] = useActionState(signup, initialAuthActionState);
+  const [state, formAction, isPending] = useActionState(
+    signup,
+    initialAuthActionState,
+  );
+  const [resendState, resendAction, isResending] = useActionState(
+    resendVerification,
+    initialAuthActionState,
+  );
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = window.setInterval(
+      () => setCooldown((value) => Math.max(0, value - 1)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
 
   function handleEmailContinue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,9 +58,9 @@ export function SignupForm() {
   }
 
   function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
-    if (password.length < 8) {
+    if (!PASSWORD_RE.test(password)) {
       event.preventDefault();
-      setPasswordError("Password must be at least 8 characters.");
+      setPasswordError("Password must meet all security requirements.");
       return;
     }
     if (password !== confirmPassword) {
@@ -66,8 +85,8 @@ export function SignupForm() {
         </button>
 
         <div className="flex flex-col gap-6">
-          <div className="flex size-12 items-center justify-center rounded-full bg-accent-primary/10">
-            <MailCheck className="size-5 text-accent-primary" aria-hidden="true" />
+          <div className="flex size-12 items-center justify-center rounded-full bg-success/10">
+            <MailCheck className="size-5 text-success" aria-hidden="true" />
           </div>
 
           <div className="space-y-1">
@@ -75,32 +94,44 @@ export function SignupForm() {
               Verify your email
             </h1>
             <p className="text-[15px] text-text-muted">
-              We sent a secure verification link to
+              We sent a secure verification link to:
             </p>
             <p className="text-[15px] font-medium text-text-primary">{email}</p>
           </div>
 
+          <p className="text-[15px] text-text-muted">
+            Open the link in your email to continue setting up your Neptlium
+            account.
+          </p>
           <div className="flex flex-col gap-3 pt-2">
-            {/* Opens the device default mail client — standard open-mail-app convention */}
             <a
               href={`mailto:${email}`}
               className="inline-flex h-12 w-full items-center justify-center rounded-full [background:var(--gradient-cta-primary)] text-[15px] font-semibold text-white shadow-sm hover:brightness-110"
             >
               Open email
             </a>
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-12 w-full rounded-full text-[15px]"
-              onClick={() => {
-                setEmail("");
-                setPassword("");
-                setConfirmPassword("");
-                setStep("email");
-              }}
-            >
-              Resend verification email
-            </Button>
+            <form action={resendAction}>
+              <input type="hidden" name="email" value={email} />
+              <Button
+                type="submit"
+                variant="outline"
+                size="lg"
+                className="h-12 w-full rounded-full text-[15px]"
+                loading={isResending}
+                disabled={cooldown > 0}
+                onClick={() => setCooldown(30)}
+              >
+                {isResending
+                  ? "Resending…"
+                  : cooldown
+                    ? `Resend available in ${cooldown}s`
+                    : "Resend verification email"}
+              </Button>
+            </form>
+            {resendState.success && (
+              <AuthNotice variant="success">{resendState.message}</AuthNotice>
+            )}
+            {resendState.error && <AuthNotice>{resendState.error}</AuthNotice>}
             <button
               type="button"
               className="pt-1 text-center text-[14px] text-accent-primary hover:brightness-110"
@@ -124,7 +155,9 @@ export function SignupForm() {
         <div className="flex flex-col gap-8">
           <div className="space-y-2">
             <h1 className="text-[36px] font-semibold leading-[1.1] tracking-tight text-text-primary sm:text-[40px]">
-              Create your<br />Neptlium account
+              Create your
+              <br />
+              Neptlium account
             </h1>
             <p className="text-[15px] text-text-muted">
               Enter your email to get started.
@@ -152,10 +185,12 @@ export function SignupForm() {
                     if (emailError) setEmailError(null);
                   }}
                   aria-invalid={Boolean(emailError)}
+                  aria-describedby="signup-email-error"
+                  disabled={isPending}
                   className={inputClass}
                 />
               </div>
-              <FieldError>{emailError}</FieldError>
+              <FieldError id="signup-email-error">{emailError}</FieldError>
             </Field>
 
             <Button type="submit" variant="cta" className={ctaClass}>
@@ -165,7 +200,10 @@ export function SignupForm() {
 
           <p className="text-center text-[14px] text-text-muted">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-accent-primary hover:brightness-110">
+            <Link
+              href="/login"
+              className="font-medium text-accent-primary hover:brightness-110"
+            >
               Sign in
             </Link>
           </p>
@@ -189,14 +227,18 @@ export function SignupForm() {
       <div className="flex flex-col gap-8">
         <div className="space-y-2">
           <h1 className="text-[32px] font-semibold leading-[1.1] tracking-tight text-text-primary">
-            Create your password
+            Secure your account
           </h1>
           <p className="text-[15px] text-text-muted">
-            Signing up as <span className="text-text-secondary">{email}</span>
+            Create a password for your Neptlium account.
           </p>
         </div>
 
-        <form action={formAction} onSubmit={handlePasswordSubmit} className="flex flex-col gap-5">
+        <form
+          action={formAction}
+          onSubmit={handlePasswordSubmit}
+          className="flex flex-col gap-5"
+        >
           {/* Hidden email field so the server action receives it */}
           <input type="hidden" name="email" value={email} />
 
@@ -208,15 +250,19 @@ export function SignupForm() {
               type="password"
               autoFocus
               autoComplete="new-password"
+              disabled={isPending}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (passwordError) setPasswordError(null);
               }}
               aria-invalid={Boolean(passwordError)}
+              aria-describedby="signup-password-requirements"
               className="h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]"
             />
-            <FieldHint>8+ characters, 1 uppercase, 1 number, 1 special character</FieldHint>
+            <div id="signup-password-requirements">
+              <PasswordRequirements {...{ password }} />
+            </div>
           </Field>
 
           <Field>
@@ -226,23 +272,31 @@ export function SignupForm() {
               name="confirmPassword"
               type="password"
               autoComplete="new-password"
+              disabled={isPending}
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
                 if (passwordError) setPasswordError(null);
               }}
               aria-invalid={Boolean(passwordError)}
+              aria-describedby="signup-password-error"
               className="h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]"
             />
-            <FieldError>{passwordError ?? state.error}</FieldError>
+            <FieldError id="signup-password-error">
+              {passwordError ?? state.error}
+            </FieldError>
           </Field>
 
-          <Button type="submit" variant="cta" className={ctaClass} loading={isPending}>
-            Create account →
+          <Button
+            type="submit"
+            variant="cta"
+            className={ctaClass}
+            loading={isPending}
+          >
+            {isPending ? "Creating account…" : "Create Account →"}
           </Button>
         </form>
       </div>
     </AuthShell>
   );
 }
-

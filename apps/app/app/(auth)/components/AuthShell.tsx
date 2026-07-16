@@ -14,7 +14,7 @@ export interface AuthShellProps {
  * Auth shell layout.
  *
  * - Neptlium mark top-left, no text beside it.
- * - Content column: left-aligned, ~560px max-width, responsive padding.
+ * - Content column: centered, 420px max-width, responsive padding.
  * - Trust footer at the bottom.
  * - Form sits directly on the background — no outer card boundary.
  */
@@ -30,16 +30,15 @@ export function AuthShell({ children }: AuthShellProps) {
         </div>
 
         {/* Content */}
-        <div className="flex flex-1 flex-col">
-          <div className="w-full max-w-[560px]">{children}</div>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-[420px]">{children}</div>
         </div>
 
         {/* Trust footer */}
-        <div className="mt-12 flex w-full max-w-[560px]">
+        <div className="mt-12 flex w-full justify-center">
           <TrustFooter />
         </div>
       </div>
     </MotionConfig>
   );
 }
-
