@@ -19,7 +19,7 @@ export function NetliumMark({ size = 40, animated = false, className }: NetliumM
         className="relative"
         style={animated ? { animation: "netlium-breathe 2.4s var(--motion-ease-in-out) infinite" } : undefined}
         role="img"
-        aria-label="Netlium"
+        aria-label="Neptlium"
       >
         <defs>
           <linearGradient id="netlium-mark-fill" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">

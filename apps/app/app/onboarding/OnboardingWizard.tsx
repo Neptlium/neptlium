@@ -51,6 +51,35 @@ export function OnboardingWizard({ email }: { readonly email: string }) {
       .finally(() => setReady(true));
   }, []);
 
+  // Auto-start provisioning when the wizard reaches the provisioning screen.
+  // The user already confirmed everything on the review step, so this removes
+  // the redundant "Begin provisioning" click.
+  useEffect(() => {
+    if (stepIndex === 6 && ready && !provisioning && !error) {
+      void (async () => {
+        const parsed = onboardingPayloadSchema.safeParse(data);
+        if (!parsed.success) {
+          setStepIndex(5);
+          setError("Review the required information before creating your workspace.");
+          return;
+        }
+        setProvisioning(true);
+        setError(null);
+        try {
+          const result = await submitProvisioning(parsed.data);
+          if (result.ok) setStepIndex(7);
+          else setError(result.error);
+        } catch {
+          setError("Your workspace could not be provisioned. Please check your connection and retry.");
+        } finally {
+          setProvisioning(false);
+        }
+      })();
+    }
+    // Only run when stepIndex transitions to 6 (ready guards against running before draft loads)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepIndex, ready]);
+
   const currentStep = onboardingSteps[stepIndex] ?? onboardingSteps[0];
   const completedStepKeys = onboardingSteps.slice(0, stepIndex).map((step) => step.key);
 
@@ -93,7 +122,7 @@ export function OnboardingWizard({ email }: { readonly email: string }) {
     setStepIndex(previous);
   }
 
-  async function provisionWorkspace() {
+  async function retryProvisioning() {
     const parsed = onboardingPayloadSchema.safeParse(data);
     if (!parsed.success) {
       setStepIndex(5);
@@ -205,7 +234,7 @@ export function OnboardingWizard({ email }: { readonly email: string }) {
             <div><h1 className="text-h3 font-semibold text-text-primary">Provisioning workspace</h1><p className="mt-2 text-body-sm text-text-secondary">Establishing your institutional operating environment.</p></div>
             <ul className="space-y-3 text-left">{["Creating workspace", "Provisioning wallet", "Applying security policies", "Preparing dashboard", "Configuring portfolio engine"].map((item) => <li key={item} className="flex items-center gap-3 text-body-sm text-text-primary"><span className={`flex size-5 items-center justify-center rounded-full border ${provisioning ? "border-accent-primary animate-pulse" : error ? "border-danger" : "border-accent-primary bg-accent-primary/10"}`}>{!provisioning && !error && <Check className="size-3 text-accent-primary" />}</span>{item}</li>)}</ul>
             <Error error={error} />
-            {error ? <Button onClick={provisionWorkspace} variant="accent" size="lg">Retry provisioning</Button> : <Button onClick={provisionWorkspace} disabled={provisioning} variant="accent" size="lg">{provisioning ? "Provisioning…" : "Begin provisioning"}</Button>}
+            {error && <Button onClick={retryProvisioning} variant="accent" size="lg">Retry provisioning</Button>}
           </section>
         )}
 

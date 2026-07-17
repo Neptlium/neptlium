@@ -25,7 +25,7 @@ export interface RoleAwareNavItem extends NavItem {
 // a separate top-level item, per that section's "simple, predictable" mandate.
 export const dashboardNavItems: readonly RoleAwareNavItem[] = [
   { label: "Portfolio", href: "/dashboard/portfolio", minRole: "user", icon: <Briefcase className="size-4" /> },
-  { label: "Netlium Wallet", href: "/dashboard/wallet", minRole: "user", icon: <Wallet className="size-4" /> },
+  { label: "Neptlium Wallet", href: "/dashboard/wallet", minRole: "user", icon: <Wallet className="size-4" /> },
   {
     label: "Transactions",
     href: "/dashboard/transactions",

@@ -61,9 +61,15 @@ export async function signup(
   _prevState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  const firstName = readRequiredField(formData, "firstName");
+  const lastName = readRequiredField(formData, "lastName");
   const email = readRequiredField(formData, "email");
   const password = readRequiredField(formData, "password");
   const confirmPassword = readRequiredField(formData, "confirmPassword");
+  const acceptedTerms = formData.get("acceptedTerms") === "on";
+
+  if (!firstName) return { error: "First name is required.", success: false };
+  if (!lastName) return { error: "Last name is required.", success: false };
 
   if (!isValidEmail(email)) {
     return {
@@ -88,6 +94,13 @@ export async function signup(
     };
   }
 
+  if (!acceptedTerms) {
+    return {
+      error: "You must accept the Terms of Service and Privacy Policy.",
+      success: false,
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const origin = await resolveOrigin();
 
@@ -96,6 +109,11 @@ export async function signup(
     password,
     options: {
       emailRedirectTo: `${origin}/auth/confirm`,
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+      },
     },
   });
 

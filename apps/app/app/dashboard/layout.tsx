@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { readonly children:
   return (
     <AppShell
       sidebar={<Sidebar items={navItems} />}
-      header={<Header title="Netlium" actions={<SignOutButton />} />}
+      header={<Header title="Neptlium" actions={<SignOutButton />} />}
     >
       {children}
     </AppShell>

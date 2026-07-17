@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
-import { Mail, ArrowLeft, MailCheck } from "lucide-react";
+import { Mail, ArrowLeft, MailCheck, Eye, EyeOff } from "lucide-react";
 import { Button, Field, FieldError, Input, Label } from "@netlium/ui";
 import { resendVerification, signup } from "../actions";
 import { emailPattern, passwordPattern } from "../auth-utils";
@@ -15,9 +15,12 @@ import { PasswordRequirements } from "../components/PasswordRequirements";
 const inputClass =
   "h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] pl-10 transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]";
 
+const inputClassPlain =
+  "h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]";
+
 const ctaClass = "h-12 w-full rounded-full text-[15px] font-semibold";
 
-type Step = "email" | "password";
+type Step = "identity" | "credentials";
 
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(
@@ -28,12 +31,23 @@ export function SignupForm() {
     resendVerification,
     initialAuthActionState,
   );
-  const [step, setStep] = useState<Step>("email");
+
+  const [step, setStep] = useState<Step>("identity");
+
+  // Step 1 fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [identityError, setIdentityError] = useState<string | null>(null);
+
+  // Step 2 fields
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [credentialError, setCredentialError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
@@ -45,28 +59,43 @@ export function SignupForm() {
     return () => window.clearInterval(timer);
   }, [cooldown]);
 
-  function handleEmailContinue(event: FormEvent<HTMLFormElement>) {
+  function handleIdentityContinue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!emailPattern.test(email)) {
-      setEmailError("Enter a valid email address.");
+    if (!firstName.trim()) {
+      setIdentityError("First name is required.");
       return;
     }
-    setEmailError(null);
-    setStep("password");
+    if (!lastName.trim()) {
+      setIdentityError("Last name is required.");
+      return;
+    }
+    if (!emailPattern.test(email)) {
+      setIdentityError("Enter a valid email address.");
+      return;
+    }
+    setIdentityError(null);
+    setStep("credentials");
   }
 
-  function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleCredentialSubmit(event: FormEvent<HTMLFormElement>) {
     if (!passwordPattern.test(password)) {
       event.preventDefault();
-      setPasswordError("Password must meet all security requirements.");
+      setCredentialError("Password must meet all security requirements.");
       return;
     }
     if (password !== confirmPassword) {
       event.preventDefault();
-      setPasswordError("Passwords do not match.");
+      setCredentialError("Passwords do not match.");
       return;
     }
-    setPasswordError(null);
+    if (!acceptedTerms) {
+      event.preventDefault();
+      setCredentialError(
+        "You must accept the Terms of Service and Privacy Policy.",
+      );
+      return;
+    }
+    setCredentialError(null);
   }
 
   /* ── Email sent / verify screen ── */
@@ -135,7 +164,7 @@ export function SignupForm() {
               className="pt-1 text-center text-[14px] text-accent-primary hover:brightness-110"
               onClick={() => {
                 setEmail("");
-                setStep("email");
+                setStep("identity");
               }}
             >
               Use a different email
@@ -146,8 +175,8 @@ export function SignupForm() {
     );
   }
 
-  /* ── Step 1: Email ── */
-  if (step === "email") {
+  /* ── Step 1: Identity (name + email) ── */
+  if (step === "identity") {
     return (
       <AuthShell>
         <div className="flex flex-col gap-8">
@@ -162,8 +191,50 @@ export function SignupForm() {
             </p>
           </div>
 
-          <form onSubmit={handleEmailContinue} className="flex flex-col gap-5">
+          <form
+            onSubmit={handleIdentityContinue}
+            className="flex flex-col gap-5"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <Field>
+                <Label htmlFor="signup-first-name">First name</Label>
+                <Input
+                  id="signup-first-name"
+                  name="firstName"
+                  type="text"
+                  autoFocus
+                  autoComplete="given-name"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    if (identityError) setIdentityError(null);
+                  }}
+                  aria-invalid={Boolean(identityError)}
+                  className={inputClassPlain}
+                />
+              </Field>
+              <Field>
+                <Label htmlFor="signup-last-name">Last name</Label>
+                <Input
+                  id="signup-last-name"
+                  name="lastName"
+                  type="text"
+                  autoComplete="family-name"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    if (identityError) setIdentityError(null);
+                  }}
+                  aria-invalid={Boolean(identityError)}
+                  className={inputClassPlain}
+                />
+              </Field>
+            </div>
+
             <Field>
+              <Label htmlFor="signup-email">Email address</Label>
               <div className="relative">
                 <Mail
                   className="pointer-events-none absolute left-3 top-1/2 size-[15px] -translate-y-1/2 text-text-muted"
@@ -173,22 +244,21 @@ export function SignupForm() {
                   id="signup-email"
                   name="email"
                   type="email"
-                  autoFocus
                   autoComplete="email"
                   inputMode="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
-                    if (emailError) setEmailError(null);
+                    if (identityError) setIdentityError(null);
                   }}
-                  aria-invalid={Boolean(emailError)}
-                  aria-describedby="signup-email-error"
+                  aria-invalid={Boolean(identityError)}
+                  aria-describedby="signup-identity-error"
                   disabled={isPending}
                   className={inputClass}
                 />
               </div>
-              <FieldError id="signup-email-error">{emailError}</FieldError>
+              <FieldError id="signup-identity-error">{identityError}</FieldError>
             </Field>
 
             <Button type="submit" variant="cta" className={ctaClass}>
@@ -210,12 +280,12 @@ export function SignupForm() {
     );
   }
 
-  /* ── Step 2: Password ── */
+  /* ── Step 2: Password + ToS ── */
   return (
     <AuthShell>
       <button
         type="button"
-        onClick={() => setStep("email")}
+        onClick={() => setStep("identity")}
         className="mb-10 flex items-center gap-2 text-[13px] text-text-muted hover:text-text-secondary"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
@@ -234,30 +304,47 @@ export function SignupForm() {
 
         <form
           action={formAction}
-          onSubmit={handlePasswordSubmit}
+          onSubmit={handleCredentialSubmit}
           className="flex flex-col gap-5"
         >
-          {/* Hidden email field so the server action receives it */}
+          {/* Hidden fields so the server action receives all values */}
+          <input type="hidden" name="firstName" value={firstName} />
+          <input type="hidden" name="lastName" value={lastName} />
           <input type="hidden" name="email" value={email} />
 
           <Field>
             <Label htmlFor="signup-password">Password</Label>
-            <Input
-              id="signup-password"
-              name="password"
-              type="password"
-              autoFocus
-              autoComplete="new-password"
-              disabled={isPending}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (passwordError) setPasswordError(null);
-              }}
-              aria-invalid={Boolean(passwordError)}
-              aria-describedby="signup-password-requirements"
-              className="h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]"
-            />
+            <div className="relative">
+              <Input
+                id="signup-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoFocus
+                autoComplete="new-password"
+                disabled={isPending}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (credentialError) setCredentialError(null);
+                }}
+                aria-invalid={Boolean(credentialError)}
+                aria-describedby="signup-password-requirements"
+                className="h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] pr-10 transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
             <div id="signup-password-requirements">
               <PasswordRequirements {...{ password }} />
             </div>
@@ -265,25 +352,73 @@ export function SignupForm() {
 
           <Field>
             <Label htmlFor="signup-confirm-password">Confirm password</Label>
-            <Input
-              id="signup-confirm-password"
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              disabled={isPending}
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (passwordError) setPasswordError(null);
-              }}
-              aria-invalid={Boolean(passwordError)}
-              aria-describedby="signup-password-error"
-              className="h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]"
-            />
-            <FieldError id="signup-password-error">
-              {passwordError ?? state.error}
+            <div className="relative">
+              <Input
+                id="signup-confirm-password"
+                name="confirmPassword"
+                type={showConfirm ? "text" : "password"}
+                autoComplete="new-password"
+                disabled={isPending}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (credentialError) setCredentialError(null);
+                }}
+                aria-invalid={Boolean(credentialError)}
+                aria-describedby="signup-credential-error"
+                className="h-12 rounded-md border-[color:var(--color-border-default)] bg-[color:var(--color-surface-1)] pr-10 transition-[border-color,box-shadow] focus:border-[color:var(--color-border-focus)] focus:shadow-[var(--shadow-focus-ring)]"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowConfirm((v) => !v)}
+                aria-label={showConfirm ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+              >
+                {showConfirm ? (
+                  <EyeOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            <FieldError id="signup-credential-error">
+              {credentialError ?? state.error}
             </FieldError>
           </Field>
+
+          {/* Terms of Service acceptance */}
+          <label className="flex cursor-pointer items-start gap-3 text-[13px] text-text-muted">
+            <input
+              type="checkbox"
+              name="acceptedTerms"
+              value="on"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (credentialError) setCredentialError(null);
+              }}
+              aria-required="true"
+              className="mt-0.5 size-4 accent-[--accent-primary]"
+            />
+            <span>
+              I agree to the{" "}
+              <Link
+                href="/terms"
+                className="font-medium text-accent-primary hover:brightness-110"
+              >
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="font-medium text-accent-primary hover:brightness-110"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
 
           <Button
             type="submit"
