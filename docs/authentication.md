@@ -237,7 +237,7 @@ None of these paths form a cycle.
 | Variable | Where | Purpose |
 |----------|-------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Client + Server | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + Server | Public anon key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client + Server | Supabase publishable key (new format, replaces old anon JWT key) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Bypasses RLS for admin ops |
 | `NEXT_PUBLIC_SITE_URL` | Server | Builds email redirect URLs |
 
