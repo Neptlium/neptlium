@@ -1,21 +1,23 @@
 /**
- * Neptlium Design System — Shared Utility & Component Classes
+ * Neptlium Design System — Shared Utility Classes
  *
- * Import after tokens.css:
+ * Uses --color-* naming (direct hex values from tokens.css).
+ * Works in both apps:
+ *   apps/app  — --color-* defined by @theme in packages/ui/styles/tokens.css
+ *   apps/web  — --color-* defined by :root in @neptlium/design-system/tokens.css
+ *
+ * Import after tokens:
  *   @import "@neptlium/design-system/tokens.css";
  *   @import "@neptlium/design-system/utilities.css";
- *
- * These classes are Tailwind-agnostic — they only depend on the CSS vars
- * defined in tokens.css.
  */
 
 /* ---------------------------------------------------------------------------
- * Layout helpers
+ * Layout
  * ------------------------------------------------------------------------- */
 .container-narrow {
   margin-inline: auto;
   width: 100%;
-  max-width: 72rem; /* 6xl */
+  max-width: 72rem;
   padding-inline: 1.5rem;
 }
 @media (min-width: 640px) {
@@ -25,7 +27,7 @@
 .container-wide {
   margin-inline: auto;
   width: 100%;
-  max-width: 80rem; /* 7xl */
+  max-width: 80rem;
   padding-inline: 1.5rem;
 }
 @media (min-width: 640px) {
@@ -33,114 +35,104 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Text gradients
- * ------------------------------------------------------------------------- */
-.text-gradient {
-  background: var(--gradient-text);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-gradient-primary {
-  background: linear-gradient(
-    135deg,
-    hsl(217 91% 65%),
-    hsl(189 94% 50%) 50%,
-    hsl(258 90% 70%)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* ---------------------------------------------------------------------------
  * Surface classes
  * ------------------------------------------------------------------------- */
-.panel {
-  background: var(--gradient-panel);
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
+.ds-panel {
+  background: var(--gradient-panel, linear-gradient(180deg, rgba(8, 14, 22, 0.9), rgba(4, 7, 11, 0.55)));
+  border: 1px solid var(--color-border-default, #1D2938);
+  border-radius: var(--radius-md, 0.5rem);
   backdrop-filter: blur(8px);
 }
 
-.panel-elevated {
-  background: hsl(var(--elevated));
-  border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
+.ds-panel-elevated {
+  background: var(--color-surface-2, #0B1420);
+  border: 1px solid var(--color-border-default, #1D2938);
+  border-radius: var(--radius-md, 0.5rem);
+  box-shadow: var(--shadow-card, 0 1px 0 rgba(255,255,255,0.02) inset, 0 20px 40px -20px rgba(0,0,0,0.7));
+}
+
+.ds-card {
+  background: var(--color-surface-1, #080E16);
+  border: 1px solid var(--color-border-default, #1D2938);
+  border-radius: var(--radius-md, 0.5rem);
+  box-shadow: var(--shadow-elevation-1, 0 1px 2px rgba(0,0,0,0.24));
 }
 
 /* ---------------------------------------------------------------------------
- * Grid & texture overlays (positioned absolutely inside a relative parent)
+ * Text gradients
  * ------------------------------------------------------------------------- */
-.grid-pattern {
-  background-image:
-    linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(
-    ellipse 70% 60% at 50% 0%,
-    black,
-    transparent 75%
-  );
+.ds-text-gradient {
+  background: var(--gradient-text, linear-gradient(180deg, #f7fafc, #c4d2e2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.hairline {
+.ds-text-gradient-primary {
+  background: var(--gradient-text-primary, linear-gradient(135deg, #4aaeff, #0B8CFF 50%, #8a7cf6));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+ * Blueprint grid & texture overlays (position: absolute inside relative)
+ * ------------------------------------------------------------------------- */
+.ds-grid-pattern {
+  background-image:
+    linear-gradient(var(--color-border-hairline, #131C27) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border-hairline, #131C27) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black, transparent 75%);
+}
+
+.ds-hairline {
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--border)) 30%,
-    hsl(var(--border)) 70%,
+    var(--color-border-default, #1D2938) 30%,
+    var(--color-border-default, #1D2938) 70%,
     transparent
   );
   height: 1px;
 }
 
-.enterprise-grid {
+.ds-enterprise-grid {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(hsl(var(--border) / 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
+    linear-gradient(rgba(29, 41, 56, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 41, 56, 0.35) 1px, transparent 1px);
   background-size: 64px 64px;
-  mask-image: radial-gradient(
-    ellipse 80% 70% at 50% 50%,
-    black,
-    transparent 80%
-  );
-  opacity: 0.5;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black, transparent 80%);
+  opacity: 0.6;
 }
 
-.accent-electric {
+.ds-blueprint-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(29, 41, 56, 0.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 41, 56, 0.6) 1px, transparent 1px),
+    linear-gradient(rgba(29, 41, 56, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 41, 56, 0.28) 1px, transparent 1px);
+  background-size: 140px 140px, 140px 140px, 28px 28px, 28px 28px;
+  mask-image: radial-gradient(ellipse 90% 85% at 50% 40%, black, transparent 82%);
+  opacity: 0.55;
+}
+
+.ds-accent-glow {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(40% 50% at 12% 0%, hsl(217 91% 60% / 0.1), transparent 70%),
-    radial-gradient(40% 50% at 88% 100%, hsl(258 90% 66% / 0.1), transparent 70%);
+    radial-gradient(40% 50% at 12% 0%, rgba(11, 140, 255, 0.10), transparent 70%),
+    radial-gradient(40% 50% at 88% 100%, rgba(84, 55, 255, 0.10), transparent 70%);
 }
 
-.blueprint-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px),
-    linear-gradient(hsl(var(--border) / 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / 0.28) 1px, transparent 1px);
-  background-size: 140px 140px, 140px 140px, 28px 28px, 28px 28px;
-  mask-image: radial-gradient(
-    ellipse 90% 85% at 50% 40%,
-    black,
-    transparent 82%
-  );
-  opacity: 0.5;
-}
-
-.noise-layer {
+.ds-noise-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -148,10 +140,10 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-.section-seam {
+.ds-section-seam {
   position: relative;
 }
-.section-seam::before {
+.ds-section-seam::before {
   content: "";
   position: absolute;
   inset-inline: 0;
@@ -160,16 +152,16 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--border) / 0.9) 25%,
-    hsl(var(--border) / 0.9) 75%,
+    rgba(29, 41, 56, 0.9) 25%,
+    rgba(29, 41, 56, 0.9) 75%,
     transparent
   );
 }
 
 /* ---------------------------------------------------------------------------
- * Interaction classes
+ * Interaction
  * ------------------------------------------------------------------------- */
-.card-lift {
+.ds-card-lift {
   transition:
     transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 300ms ease,
@@ -177,17 +169,17 @@
     background-color 300ms ease;
   will-change: transform;
 }
-.card-lift:hover {
+.ds-card-lift:hover {
   transform: translateY(-3px);
-  border-color: hsl(var(--primary) / 0.4);
+  border-color: rgba(11, 140, 255, 0.4);
   box-shadow:
-    0 24px 48px -28px hsl(0 0% 0% / 0.85),
-    0 0 0 1px hsl(var(--primary) / 0.08) inset,
-    0 0 40px -18px hsl(var(--primary) / 0.4);
+    0 24px 48px -28px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(11, 140, 255, 0.08) inset,
+    0 0 40px -18px rgba(11, 140, 255, 0.4);
 }
 
-.enterprise-logo {
-  color: hsl(var(--muted-foreground) / 0.7);
+.ds-enterprise-logo {
+  color: rgba(145, 164, 186, 0.7);
   filter: grayscale(1);
   opacity: 0.55;
   transition:
@@ -196,57 +188,53 @@
     filter 300ms ease,
     transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.enterprise-logo:hover {
-  color: hsl(var(--foreground));
+.ds-enterprise-logo:hover {
+  color: var(--color-text-primary, #f7fafc);
   filter: grayscale(0);
   opacity: 1;
   transform: translateY(-2px);
 }
 
+/* CTA button using brand gradient */
+.ds-btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-cta-primary, linear-gradient(90deg, #0B8CFF 0%, #1769F4 62%, #5437FF 100%));
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: var(--radius-full, 9999px);
+  transition: filter var(--transition-base, 180ms cubic-bezier(0.16, 1, 0.3, 1));
+}
+.ds-btn-cta:hover { filter: brightness(1.1); }
+.ds-btn-cta:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus-ring, 0 0 0 3px rgba(11, 140, 255, 0.28));
+}
+
 /* ---------------------------------------------------------------------------
- * Keyframe animations
+ * Keyframes
  * ------------------------------------------------------------------------- */
-@keyframes drift-slow {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50%       { transform: translate3d(2%, -1.5%, 0) scale(1.06); }
-}
-
-@keyframes streak {
-  0%         { transform: translateX(-30%); opacity: 0; }
-  15%, 85%   { opacity: 1; }
-  100%       { transform: translateX(130%); opacity: 0; }
-}
-
-@keyframes sheen {
+@keyframes ds-shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes fade-up {
+@keyframes ds-fade-up {
   0%   { opacity: 0; transform: translateY(12px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes fade-in {
+@keyframes ds-fade-in {
   0%   { opacity: 0; }
   100% { opacity: 1; }
 }
 
-@keyframes accordion-down {
-  from { height: 0; }
-  to   { height: var(--radix-accordion-content-height); }
-}
-
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to   { height: 0; }
+@keyframes ds-drift-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(2%, -1.5%, 0) scale(1.06); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .motion-safe-anim { animation: none !important; }
+  .ds-motion-safe { animation: none !important; }
 }

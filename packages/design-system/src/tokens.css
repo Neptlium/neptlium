@@ -1,138 +1,154 @@
 /**
- * Neptlium Design System — CSS Custom Properties
- * BlackRock × Stripe institutional aesthetic.
+ * Neptlium Design System — Canonical CSS Custom Properties
  *
- * Import this file in any app to get the full token set:
- *   @import "@neptlium/design-system/tokens.css";
+ * Single source of truth for both apps.
  *
- * All color values are raw HSL channels (no hsl() wrapper) so they compose
- * cleanly with Tailwind's opacity modifier syntax: bg-primary/50
+ * @import "@neptlium/design-system/tokens.css"
+ *
+ * Architecture:
+ *   --color-*   Direct hex values — used by utilities.css and Tailwind v4 @theme
+ *   --*         HSL channel strings (no hsl() wrapper) — for Tailwind v3 / shadcn
+ *               components that do hsl(var(--border))
+ *
+ * Both naming systems express the same institutional midnight-navy palette.
+ * apps/app (Tailwind v4) consumes --color-* via @theme in packages/ui.
+ * apps/web (Tailwind v3) consumes the HSL aliases via tailwind.config.ts.
  */
 
 :root {
-  /* -------------------------------------------------------------------------
-   * Surfaces — obsidian / near-black institutional graphite
-   * ----------------------------------------------------------------------- */
-  --background: 0 0% 2%;             /* #050505 obsidian */
-  --foreground: 0 0% 93%;            /* #EDEDED soft institutional white */
+  /* ===========================================================================
+   * DIRECT HEX VALUES
+   * Used by utilities.css and any context that can take raw CSS values.
+   * ========================================================================= */
 
-  --panel: 0 0% 5%;                  /* #0D0D0D */
-  --elevated: 0 0% 8.5%;             /* #161616 */
+  /* Surfaces */
+  --color-canvas:            #04070B;  /* primary app canvas */
+  --color-surface-1:         #080E16;  /* cards, widgets, forms */
+  --color-surface-2:         #0B1420;  /* hover cards, dropdowns */
+  --color-surface-3:         #0F1E30;  /* modals, popovers */
+  --color-sidebar:           #030508;
+  --color-panel:             #080E16;
 
-  --card: 0 0% 6.7%;                 /* #111111 */
-  --card-foreground: 0 0% 93%;
+  /* Borders */
+  --color-border-hairline:   #131C27;
+  --color-border-default:    #1D2938;
+  --color-border-strong:     #30445E;
+  --color-border-hover:      #30445E;
+  --color-border-interactive: #168CFF;
+  --color-border-focus:      #2E9BFF;
 
-  --popover: 0 0% 6.7%;
-  --popover-foreground: 0 0% 93%;
+  /* Text */
+  --color-text-primary:      #f7fafc;
+  --color-text-secondary:    #c4d2e2;
+  --color-text-muted:        #91a4ba;
+  --color-text-disabled:     #617286;
 
-  /* -------------------------------------------------------------------------
-   * Brand — institutional blue / cyan / purple
-   * ----------------------------------------------------------------------- */
-  --primary: 217 91% 60%;            /* #3B82F6 */
-  --primary-foreground: 0 0% 100%;
-  --primary-glow: 189 94% 43%;       /* #06B6D4 cyan */
+  /* Brand */
+  --color-accent-primary:    #0B8CFF;
+  --color-accent-primary-hover: #168CFF;
+  --color-accent-primary-pressed: #1769F4;
+  --color-accent-primary-foreground: #ffffff;
+  --color-accent-gold:       #c7a34f;
 
-  --secondary: 258 90% 66%;          /* #8B5CF6 purple */
-  --secondary-foreground: 0 0% 100%;
+  /* Status */
+  --color-success:           #2dba72;
+  --color-success-foreground: #062615;
+  --color-warning:           #d7a13c;
+  --color-warning-foreground: #2a1d06;
+  --color-danger:            #d9534f;
+  --color-danger-foreground: #ffffff;
+  --color-info:              #0B8CFF;
+  --color-info-foreground:   #ffffff;
 
-  /* Institutional emerald accent — active/nav states */
-  --accent-emerald: 158 64% 45%;
-  --accent-emerald-foreground: 0 0% 100%;
+  /* Gradients */
+  --gradient-cta-primary: linear-gradient(90deg, #0B8CFF 0%, #1769F4 62%, #5437FF 100%);
+  --gradient-hero:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(11, 140, 255, 0.18), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(84, 55, 255, 0.12), transparent 60%),
+    linear-gradient(180deg, #020304, #04070B);
+  --gradient-panel: linear-gradient(180deg, rgba(8, 14, 22, 0.9), rgba(4, 7, 11, 0.55));
+  --gradient-border: linear-gradient(135deg, rgba(11, 140, 255, 0.5), rgba(84, 55, 255, 0.3), transparent);
+  --gradient-text: linear-gradient(180deg, #f7fafc, #c4d2e2);
+  --gradient-text-primary: linear-gradient(135deg, #4aaeff, #0B8CFF 50%, #8a7cf6);
 
-  /* -------------------------------------------------------------------------
-   * Semantic states
-   * ----------------------------------------------------------------------- */
-  --success: 158 64% 45%;            /* institutional emerald */
-  --success-foreground: 0 0% 100%;
-  --warning: 38 92% 50%;
-  --warning-foreground: 0 0% 0%;
-  --destructive: 0 84% 60%;
+  /* Shadows */
+  --shadow-elevated:    0 24px 48px -24px rgba(0, 0, 0, 0.9);
+  --shadow-glow:        0 0 0 1px rgba(11, 140, 255, 0.14), 0 20px 60px rgba(11, 140, 255, 0.10);
+  --shadow-card:        0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  --shadow-focus-ring:  0 0 0 3px rgba(11, 140, 255, 0.28);
+  --shadow-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-elevation-3: 0 10px 30px rgba(0, 0, 0, 0.28);
+
+  /* Radius */
+  --radius-xs:   0.25rem;
+  --radius-sm:   0.375rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Motion */
+  --motion-duration-fast:   120ms;
+  --motion-duration-normal: 180ms;
+  --motion-duration-slow:   250ms;
+  --motion-ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out:     cubic-bezier(0.65, 0, 0.35, 1);
+  --transition-base:        180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ===========================================================================
+   * TAILWIND V3 / SHADCN HSL ALIASES
+   * HSL channel strings (no hsl() wrapper).
+   * Consumed as: hsl(var(--background)), hsl(var(--border)) etc.
+   * ========================================================================= */
+
+  /* Surfaces */
+  --background:             220 47% 3%;
+  --foreground:             210 40% 98%;
+  --card:                   220 47% 6%;
+  --card-foreground:        210 40% 98%;
+  --popover:                220 47% 8%;
+  --popover-foreground:     210 40% 98%;
+  --panel:                  220 47% 6%;
+  --elevated:               220 47% 8%;
+
+  /* Brand */
+  --primary:                206 100% 52%;
+  --primary-foreground:     0 0% 100%;
+  --secondary:              220 47% 8%;
+  --secondary-foreground:   210 40% 98%;
+
+  /* Neutrals */
+  --muted:                  220 47% 8%;
+  --muted-foreground:       210 20% 65%;
+  --accent:                 220 47% 10%;
+  --accent-foreground:      210 40% 98%;
+
+  /* Borders + inputs */
+  --border:                 218 33% 17%;
+  --input:                  218 33% 12%;
+  --ring:                   206 100% 52%;
+
+  /* Status */
+  --success:                148 61% 45%;
+  --warning:                38 68% 54%;
+  --destructive:            2 63% 57%;
   --destructive-foreground: 0 0% 100%;
 
-  /* -------------------------------------------------------------------------
-   * Neutrals
-   * ----------------------------------------------------------------------- */
-  --muted: 0 0% 8%;
-  --muted-foreground: 0 0% 62%;      /* soft institutional gray */
-  --accent: 0 0% 10%;
-  --accent-foreground: 0 0% 93%;
+  /* Shape */
+  --radius:                 0.5rem;
 
-  --border: 0 0% 16%;                /* dark graphite */
-  --input: 0 0% 12%;
-  --ring: 158 64% 45%;
-
-  /* -------------------------------------------------------------------------
-   * Shape
-   * ----------------------------------------------------------------------- */
-  --radius: 0.625rem;
-
-  /* -------------------------------------------------------------------------
-   * Premium gradients
-   * ----------------------------------------------------------------------- */
-  --gradient-hero: radial-gradient(
-      ellipse 80% 60% at 50% -10%,
-      hsl(217 91% 60% / 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 60% 50% at 80% 20%,
-      hsl(258 90% 66% / 0.12),
-      transparent 60%
-    ),
-    linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 3%));
-
-  --gradient-primary: linear-gradient(
-    135deg,
-    hsl(217 91% 60%) 0%,
-    hsl(189 94% 43%) 50%,
-    hsl(258 90% 66%) 100%
-  );
-
-  --gradient-panel: linear-gradient(
-    180deg,
-    hsl(0 0% 8% / 0.9),
-    hsl(0 0% 4% / 0.55)
-  );
-
-  --gradient-text: linear-gradient(
-    180deg,
-    hsl(0 0% 100%),
-    hsl(215 20% 75%)
-  );
-
-  --gradient-border: linear-gradient(
-    135deg,
-    hsl(217 91% 60% / 0.5),
-    hsl(258 90% 66% / 0.3),
-    transparent
-  );
-
-  /* -------------------------------------------------------------------------
-   * Shadows
-   * ----------------------------------------------------------------------- */
-  --shadow-elevated: 0 24px 48px -24px hsl(0 0% 0% / 0.9);
-  --shadow-glow: 0 0 60px -10px hsl(217 91% 60% / 0.35);
-  --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.04) inset,
-    0 20px 40px -20px hsl(0 0% 0% / 0.7);
-
-  /* -------------------------------------------------------------------------
-   * Typography
-   * ----------------------------------------------------------------------- */
-  --font-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* -------------------------------------------------------------------------
-   * Sidebar
-   * ----------------------------------------------------------------------- */
-  --sidebar-background: 0 0% 3%;
-  --sidebar-foreground: 0 0% 62%;
-  --sidebar-primary: 158 64% 45%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 9%;
-  --sidebar-accent-foreground: 0 0% 93%;
-  --sidebar-border: 0 0% 15%;
-  --sidebar-ring: 158 64% 45%;
+  /* Sidebar */
+  --sidebar-background:          222 47% 2%;
+  --sidebar-foreground:          210 20% 65%;
+  --sidebar-primary:             206 100% 52%;
+  --sidebar-primary-foreground:  0 0% 100%;
+  --sidebar-accent:              220 47% 9%;
+  --sidebar-accent-foreground:   210 40% 98%;
+  --sidebar-border:              220 35% 11%;
+  --sidebar-ring:                206 100% 52%;
 }

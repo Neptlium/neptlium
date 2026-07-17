@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "@netlium/ui/styles/tokens.css";
 
+/* Shared Neptlium design system — utility classes (.ds-panel, .ds-blueprint-grid, etc.)
+   and HSL aliases for any Tailwind-v3-compatible tooling in this workspace. */
+@import "@neptlium/design-system/tokens.css";
+@import "@neptlium/design-system/utilities.css";
+
+/* Scan design-system source for any Tailwind v4 class references */
+@source "../../../packages/design-system/src";
+
 /* apps/app's own source is scanned automatically; packages/ui lives outside this
    directory tree and its component classes must be scanned explicitly. */
 @source "../../../packages/ui/src";

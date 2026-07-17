@@ -133,6 +133,43 @@ export async function signup(
   };
 }
 
+export async function verifyEmailOtp(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = readRequiredField(formData, "email");
+  const token = (formData.get("token") as string | null)?.trim() ?? "";
+
+  if (!isValidEmail(email))
+    return { error: "Enter a valid email address.", success: false };
+  if (!/^\d{6}$/.test(token))
+    return { error: "Enter the 6-digit code from your email.", success: false };
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+
+  if (error || !data.user) {
+    const msg = error?.message ?? "";
+    if (/expired/i.test(msg))
+      return { error: "Code expired. Request a new one below.", success: false };
+    if (/invalid/i.test(msg) || /not found/i.test(msg))
+      return { error: "Incorrect code. Check your email and try again.", success: false };
+    if (/rate.?limit/i.test(msg))
+      return { error: "Too many attempts. Please wait before trying again.", success: false };
+    return { error: "Verification failed. Please try again.", success: false };
+  }
+
+  await recordSecurityEvent(supabase, data.user.id, "signup");
+  await recordTrustedDevice(supabase, data.user.id);
+
+  redirect("/onboarding");
+}
+
 export async function resendVerification(
   _prevState: AuthActionState,
   formData: FormData,
@@ -142,23 +179,22 @@ export async function resendVerification(
     return { error: "Enter a valid email address.", success: false };
 
   const supabase = await createSupabaseServerClient();
-  const origin = await resolveOrigin();
+
   const { error } = await supabase.auth.resend({
     type: "signup",
     email,
-    options: { emailRedirectTo: `${origin}/auth/confirm` },
   });
 
   if (error) {
     return {
-      error: /rate limit/i.test(error.message)
+      error: /rate.?limit/i.test(error.message)
         ? "Too many attempts. Please wait before trying again."
         : "We couldn’t complete the request. Please try again.",
       success: false,
     };
   }
 
-  return { error: null, success: true, message: "Verification email resent." };
+  return { error: null, success: true, message: "A new code has been sent." };
 }
 
 export async function resetPassword(

@@ -4,7 +4,8 @@ const nextConfig = {
   transpilePackages: [
     "@netlium/lib",
     "@netlium/ui",
-    "@netlium/types"
+    "@netlium/types",
+    "@neptlium/design-system"
   ],
   experimental: {
     serverActions: {
