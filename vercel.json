@@ -1,0 +1,36 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.netlium.co" }],
+      "destination": "https://netlium.co/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "https://app.netlium.co/app/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "https://app.netlium.co/login",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    }
+  ]
+}

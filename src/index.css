@@ -1,0 +1,379 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Netlium institutional design system. Aligned with Netlium Capital Hub.
+ * BlackRock × Stripe aesthetic. All colors HSL.
+ */
+
+@layer base {
+  :root {
+    /* Surfaces — obsidian / near-black institutional graphite */
+    --background: 0 0% 2%;             /* #050505 obsidian */
+    --foreground: 0 0% 93%;            /* #EDEDED soft institutional white */
+
+    --panel: 0 0% 5%;                  /* #0D0D0D */
+    --elevated: 0 0% 8.5%;             /* #161616 */
+
+    --card: 0 0% 6.7%;                 /* #111111 */
+    --card-foreground: 0 0% 93%;
+
+    --popover: 0 0% 6.7%;
+    --popover-foreground: 0 0% 93%;
+
+    /* Brand — institutional blue / cyan / purple (preserved) */
+    --primary: 217 91% 60%;            /* #3B82F6 */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 189 94% 43%;       /* #06B6D4 cyan */
+
+    --secondary: 258 90% 66%;          /* #8B5CF6 purple */
+    --secondary-foreground: 0 0% 100%;
+
+    /* Institutional emerald accent — subtle, used for active/nav states */
+    --accent-emerald: 158 64% 45%;     /* refined emerald */
+    --accent-emerald-foreground: 0 0% 100%;
+
+    /* States */
+    --success: 158 64% 45%;            /* institutional emerald */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Neutrals */
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 62%;      /* soft institutional gray */
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 93%;
+
+    --border: 0 0% 16%;                /* dark graphite, stronger contrast */
+    --input: 0 0% 12%;
+    --ring: 158 64% 45%;
+
+    --radius: 0.625rem;
+
+    /* Premium gradients */
+    --gradient-hero: radial-gradient(
+        ellipse 80% 60% at 50% -10%,
+        hsl(217 91% 60% / 0.18),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 80% 20%,
+        hsl(258 90% 66% / 0.12),
+        transparent 60%
+      ),
+      linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 3%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(217 91% 60%) 0%,
+      hsl(189 94% 43%) 50%,
+      hsl(258 90% 66%) 100%
+    );
+    --gradient-panel: linear-gradient(
+      180deg,
+      hsl(0 0% 8% / 0.9),
+      hsl(0 0% 4% / 0.55)
+    );
+    --gradient-text: linear-gradient(
+      180deg,
+      hsl(0 0% 100%),
+      hsl(215 20% 75%)
+    );
+    --gradient-border: linear-gradient(
+      135deg,
+      hsl(217 91% 60% / 0.5),
+      hsl(258 90% 66% / 0.3),
+      transparent
+    );
+
+    /* Shadows */
+    --shadow-elevated: 0 24px 48px -24px hsl(0 0% 0% / 0.9);
+    --shadow-glow: 0 0 60px -10px hsl(217 91% 60% / 0.35);
+    --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.04) inset,
+      0 20px 40px -20px hsl(0 0% 0% / 0.7);
+
+    /* Typography */
+    --font-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 62%;
+    --sidebar-primary: 158 64% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 9%;
+    --sidebar-accent-foreground: 0 0% 93%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 158 64% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .font-mono, code, pre {
+    font-family: var(--font-mono);
+  }
+
+  ::selection {
+    background: hsl(217 91% 60% / 0.3);
+    color: hsl(0 0% 100%);
+  }
+}
+
+@layer components {
+  .container-narrow {
+    @apply mx-auto w-full max-w-6xl px-6 sm:px-8;
+  }
+
+  .container-wide {
+    @apply mx-auto w-full max-w-7xl px-6 sm:px-8;
+  }
+
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-primary {
+    background: linear-gradient(
+      135deg,
+      hsl(217 91% 65%),
+      hsl(189 94% 50%) 50%,
+      hsl(258 90% 70%)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .panel {
+    background: var(--gradient-panel);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    backdrop-filter: blur(8px);
+  }
+
+  .panel-elevated {
+    background: hsl(var(--elevated));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+
+  .grid-pattern {
+    background-image: linear-gradient(
+        hsl(var(--border) / 0.5) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        hsl(var(--border) / 0.5) 1px,
+        transparent 1px
+      );
+    background-size: 56px 56px;
+    mask-image: radial-gradient(
+      ellipse 70% 60% at 50% 0%,
+      black,
+      transparent 75%
+    );
+  }
+
+  .hairline {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--border)) 30%,
+      hsl(var(--border)) 70%,
+      transparent
+    );
+    height: 1px;
+  }
+
+  /* Faint full-bleed enterprise grid overlay for sections */
+  .enterprise-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(
+        hsl(var(--border) / 0.35) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(
+      ellipse 80% 70% at 50% 50%,
+      black,
+      transparent 80%
+    );
+    opacity: 0.5;
+  }
+
+  /* Controlled electric blue/violet accent glow */
+  .accent-electric {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        40% 50% at 12% 0%,
+        hsl(217 91% 60% / 0.1),
+        transparent 70%
+      ),
+      radial-gradient(
+        40% 50% at 88% 100%,
+        hsl(258 90% 66% / 0.1),
+        transparent 70%
+      );
+  }
+
+  /* Blueprint architectural grid — fine + coarse, radial-masked */
+  .blueprint-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: linear-gradient(
+        hsl(var(--border) / 0.6) 1px,
+        transparent 1px
+      ),
+      linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(hsl(var(--border) / 0.28) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.28) 1px, transparent 1px);
+    background-size: 140px 140px, 140px 140px, 28px 28px, 28px 28px;
+    mask-image: radial-gradient(
+      ellipse 90% 85% at 50% 40%,
+      black,
+      transparent 82%
+    );
+    opacity: 0.5;
+  }
+
+  /* Ultra-subtle film grain to add depth without noise */
+  .noise-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Section seam — blends adjacent sections instead of a hard border */
+  .section-seam {
+    position: relative;
+  }
+  .section-seam::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--border) / 0.9) 25%,
+      hsl(var(--border) / 0.9) 75%,
+      transparent
+    );
+  }
+
+  /* Premium card lift interaction */
+  .card-lift {
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 300ms ease, box-shadow 300ms ease, background-color 300ms ease;
+    will-change: transform;
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    border-color: hsl(var(--primary) / 0.4);
+    box-shadow: 0 24px 48px -28px hsl(0 0% 0% / 0.85),
+      0 0 0 1px hsl(var(--primary) / 0.08) inset,
+      0 0 40px -18px hsl(var(--primary) / 0.4);
+  }
+
+  /* Monochrome enterprise logo — illuminates on hover */
+  .enterprise-logo {
+    color: hsl(var(--muted-foreground) / 0.7);
+    filter: grayscale(1);
+    opacity: 0.55;
+    transition: opacity 300ms ease, color 300ms ease, filter 300ms ease,
+      transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .enterprise-logo:hover {
+    color: hsl(var(--foreground));
+    filter: grayscale(0);
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@layer utilities {
+  /* Slow, near-invisible ambient motion for hero layers */
+  @keyframes drift-slow {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(2%, -1.5%, 0) scale(1.06);
+    }
+  }
+  @keyframes streak {
+    0% {
+      transform: translateX(-30%);
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(130%);
+      opacity: 0;
+    }
+  }
+  @keyframes sheen {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .motion-safe-anim {
+      animation: none !important;
+    }
+  }
+}
