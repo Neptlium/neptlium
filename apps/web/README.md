@@ -1,8 +1,8 @@
-# Neptlium Systems
+# Neptlium
 
 > Institutional Capital Infrastructure for the Digital Asset Economy
 
-Neptlium Systems builds institutional-grade software that enables organizations to coordinate, allocate, monitor, and manage digital capital through secure, intelligent infrastructure.
+Neptlium builds institutional-grade software that enables organizations to coordinate, allocate, monitor, and manage digital capital through secure, intelligent infrastructure.
 
 This repository contains the public marketing platform that introduces the Neptlium ecosystem, communicates the platform vision, and serves as the institutional entry point into the Neptlium application.
 
