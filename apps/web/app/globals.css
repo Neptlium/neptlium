@@ -1,16 +1,15 @@
+/* @import must precede all other rules — Tailwind v3 PostCSS requirement */
+@import "@neptlium/design-system/tokens.css";
+@import "@neptlium/design-system/utilities.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Shared Neptlium design tokens (same source as apps/app) */
-@import "@neptlium/design-system/tokens.css";
-@import "@neptlium/design-system/utilities.css";
-
 /* ---------------------------------------------------------------------------
  * Compat shim: apps/app uses --color-accent-primary; Tailwind v3 components
  * use hsl(var(--primary)). Both resolve to the same Neptlium Blue #0B8CFF.
- * accent-emerald is a legacy alias kept for any component that still references
- * it — maps to primary (blue, not green).
+ * accent-emerald is a legacy alias that maps to primary (blue, not green).
  * ------------------------------------------------------------------------- */
 :root {
   --accent-emerald: var(--primary);
@@ -58,7 +57,6 @@
     color: hsl(var(--foreground));
   }
 
-  /* Scrollbar — matches apps/app */
   *::-webkit-scrollbar {
     width: 10px;
   }
