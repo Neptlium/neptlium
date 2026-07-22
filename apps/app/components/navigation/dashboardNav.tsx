@@ -24,8 +24,7 @@ export interface RoleAwareNavItem extends NavItem {
 /**
  * Institutional information architecture.
  * Items are grouped by the `group` property; Sidebar renders section headings.
- * Primary mobile nav tabs (Dashboard, Portfolio, Wallet, Transactions) are
- * filtered out from the MobileNavigation "More" sheet in the layout.
+ * AppShell and MobileNavigation both consume this shared source of truth.
  */
 export const dashboardNavItems: readonly RoleAwareNavItem[] = [
   // Overview

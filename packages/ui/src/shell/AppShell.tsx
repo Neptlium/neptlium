@@ -31,12 +31,12 @@ function NeptliumMark({ size = 22 }: { size?: number }) {
  * AppShell — Institutional dashboard container for Neptlium.
  *
  * Desktop: fixed 240px sidebar + scrollable content area with topbar.
- * Mobile: compact sticky header + main content + bottom navigation.
+ * Mobile/tablet: compact sticky header + main content + optional drawer trigger.
  *
  * Props:
  *   sidebar        — nav links rendered inside the desktop sidebar
  *   sidebarFooter  — user identity + sign-out anchored to sidebar bottom
- *   mobileNav      — MobileNavigation component rendered at page bottom
+ *   mobileNav      — mobile header/navigation component
  *
  * The legacy `header` prop is retained for backward compatibility but is no
  * longer rendered — the sidebar wordmark and mobile header replace it.
@@ -61,7 +61,7 @@ export function AppShell({
       {/* ------------------------------------------------------------------ */}
       {/* Desktop sidebar — hidden on mobile                                  */}
       {/* ------------------------------------------------------------------ */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border-hairline bg-sidebar md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border-hairline bg-sidebar lg:flex">
         {/* Wordmark */}
         <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border-hairline px-5">
           <NeptliumMark size={22} />
@@ -91,28 +91,27 @@ export function AppShell({
       {/* ------------------------------------------------------------------ */}
       {/* Main content column (offset by sidebar on desktop)                  */}
       {/* ------------------------------------------------------------------ */}
-      <div className="flex flex-col md:pl-60">
+      <div className="flex flex-col lg:pl-60">
         {/* Mobile compact header */}
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2.5 border-b border-border-hairline bg-topnav px-4 md:hidden">
-          <NeptliumMark size={20} />
-          <span className="text-body-sm font-semibold tracking-tight text-text-primary">
-            Neptlium
-          </span>
+        <header className="sticky top-0 z-20 h-14 shrink-0 border-b border-border-hairline bg-topnav lg:hidden">
+          {mobileNav ?? (
+            <div className="flex h-full items-center gap-2.5 px-4">
+              <NeptliumMark size={20} />
+              <span className="text-body-sm font-semibold tracking-tight text-text-primary">
+                Neptlium
+              </span>
+            </div>
+          )}
         </header>
 
         {/* Desktop topbar placeholder — keeps content below fixed sidebar header */}
-        <div className="hidden h-14 shrink-0 border-b border-border-hairline bg-topnav md:block" aria-hidden="true" />
+        <div className="hidden h-14 shrink-0 border-b border-border-hairline bg-topnav lg:block" aria-hidden="true" />
 
-        {/* Page content — extra bottom padding on mobile for bottom nav */}
-        <main className="flex-1 overflow-auto px-4 py-6 pb-28 md:px-8 md:py-8 md:pb-8">
+        {/* Page content */}
+        <main className="flex-1 overflow-auto px-4 py-6 md:px-6 md:py-7 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Mobile bottom navigation                                            */}
-      {/* ------------------------------------------------------------------ */}
-      {mobileNav}
     </div>
   );
 }
