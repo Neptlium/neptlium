@@ -7,11 +7,6 @@ const nextConfig = {
     "@netlium/types",
     "@neptlium/design-system"
   ],
-  turbopack: {
-    // Explicitly set the monorepo root so Turbopack doesn't misdetect
-    // C:\Users\Cleaneagle\package-lock.json as the workspace root.
-    root: "../../"
-  },
   experimental: {
     serverActions: {
       // Server Actions compare the request's Origin header against the safelist
