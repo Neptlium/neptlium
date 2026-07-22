@@ -11,8 +11,6 @@ import {
   EmptyState,
   StatCard,
 } from "@netlium/ui";
-import { WithdrawalForm } from "../wallet/WithdrawalForm";
-import type { AssetNetworkPair } from "../wallet/GenerateAddressButton";
 
 const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> = {
   completed: "success",
@@ -44,7 +42,7 @@ export default async function WithdrawalsPage() {
             Withdrawals
           </h1>
           <p className="mt-1 text-[13px] text-text-muted">
-            Request and track USD wire withdrawals from your wallet
+            Crypto withdrawals are unavailable until on-chain custody support is configured
           </p>
         </div>
         <Card>
@@ -61,25 +59,10 @@ export default async function WithdrawalsPage() {
   }
 
   const provider = new InternalLedgerCustodyProvider(supabase);
-  const [balances, transactions, assets] = await Promise.all([
+  const [balances, transactions] = await Promise.all([
     provider.getBalances(walletRow.id),
     provider.listTransactions(walletRow.id),
-    provider.listSupportedAssets(),
   ]);
-
-  const pairs: AssetNetworkPair[] = (
-    await Promise.all(
-      assets.map(async (asset) => {
-        const networks = await provider.listSupportedNetworks(asset.code);
-        return networks.map((net) => ({
-          assetCode: asset.code,
-          assetLabel: asset.label,
-          networkCode: net.code,
-          networkLabel: net.label,
-        }));
-      })
-    )
-  ).flat();
 
   const totalBalance = balances.reduce((s, b) => s + b.amount, 0);
   const withdrawals = transactions.filter((t) => t.type === "withdrawal");
@@ -96,7 +79,7 @@ export default async function WithdrawalsPage() {
           Withdrawals
         </h1>
         <p className="mt-1 text-[13px] text-text-muted">
-          Request and track USD wire withdrawals from your wallet
+          Crypto withdrawals are unavailable until on-chain custody support is configured
         </p>
       </div>
 
@@ -151,20 +134,17 @@ export default async function WithdrawalsPage() {
           </CardContent>
         </Card>
 
-        {/* Right: new withdrawal form */}
+        {/* Right: unavailable withdrawal controls */}
         <Card>
           <CardHeader>
-            <CardTitle>New request</CardTitle>
+            <CardTitle>Withdrawal controls</CardTitle>
           </CardHeader>
           <CardContent>
-            {pairs.length === 0 ? (
-              <EmptyState
-                title="No supported assets"
-                description="No withdrawal-eligible assets are configured for your wallet."
-              />
-            ) : (
-              <WithdrawalForm pairs={pairs} />
-            )}
+            <EmptyState
+              icon={<ArrowUpRight className="size-5" aria-hidden="true" />}
+              title="Crypto withdrawals are not currently available for this account."
+              description="No on-chain custody provider or address-validation flow is configured, so withdrawal controls remain disabled."
+            />
           </CardContent>
         </Card>
       </div>

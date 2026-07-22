@@ -52,10 +52,10 @@ export default async function DepositPage() {
     <div className="space-y-6 py-4">
       <div>
         <h1 className="text-[18px] font-semibold tracking-[-0.01em] text-text-primary">
-          Deposit Funds
+          Crypto Deposits
         </h1>
         <p className="mt-1 text-[13px] text-text-muted">
-          Add funds to your Neptlium wallet via domestic wire transfer
+          Crypto deposits are unavailable until a real custody provider is configured
         </p>
       </div>
 

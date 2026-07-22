@@ -18,7 +18,6 @@ import {
   StatCard,
 } from "@netlium/ui";
 import { DepositPanel } from "./CryptoDepositFlow";
-import { WithdrawalForm } from "./WithdrawalForm";
 
 interface AssetNetworkPair {
   assetCode: string;
@@ -188,7 +187,6 @@ export function WalletView({
   pendingCount,
   existingAddresses,
   transactions,
-  pairs,
   hasWallet,
   walletId,
 }: WalletViewProps) {
@@ -202,7 +200,7 @@ export function WalletView({
           Neptlium Wallet
         </h1>
         <p className="mt-1 text-[13px] text-text-muted">
-          Funding references, withdrawals, and transaction history
+          Crypto balances, funding destinations, withdrawals, and transaction history
         </p>
       </div>
 
@@ -265,8 +263,8 @@ export function WalletView({
                     {existingAddresses.length === 0 ? (
                       <EmptyState
                         icon={<Wallet className="size-5" aria-hidden="true" />}
-                        title="No funding references"
-                        description="Generate a wire funding reference to start receiving deposits."
+                        title="No crypto destinations"
+                        description="Crypto deposits are not currently available for this account."
                       />
                     ) : (
                       <div className="divide-y divide-border-hairline">
@@ -301,14 +299,14 @@ export function WalletView({
                       size="sm"
                       onClick={() => setActiveTab("Deposit")}
                     >
-                      Deposit funds
+                      Deposit
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setActiveTab("Withdraw")}
                     >
-                      Request withdrawal
+                      Withdraw
                     </Button>
                     <Button variant="outline" size="sm" href="/dashboard/transactions">
                       View transactions
@@ -326,12 +324,6 @@ export function WalletView({
         {/* Deposit */}
         {activeTab === "Deposit" && (
           <div className="space-y-4">
-            <div className="rounded-md border border-border-default bg-surface-2 px-4 py-3">
-              <p className="text-[12px] text-text-muted">
-                Wire funding references are unique identifiers for your Neptlium wallet. Use them to
-                initiate domestic wire transfers from your bank.
-              </p>
-            </div>
             <DepositPanel existingAddresses={existingAddresses} walletId={walletId} />
           </div>
         )}
@@ -339,26 +331,15 @@ export function WalletView({
         {/* Withdraw */}
         {activeTab === "Withdraw" && (
           <div className="space-y-4">
-            {!hasWallet || pairs.length === 0 ? (
-              <Card>
-                <CardContent className="py-10">
-                  <EmptyState
-                    icon={<ArrowUpRight className="size-5" aria-hidden="true" />}
-                    title="Withdrawal unavailable"
-                    description="No supported assets are configured for your wallet."
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="rounded-md border border-warning/30 bg-warning/8 px-3.5 py-3 text-[12px] text-warning">
-                  Withdrawal requests are reviewed before processing. Allow 1–3 business days.
-                </div>
-                <div className="max-w-md">
-                  <WithdrawalForm pairs={pairs} />
-                </div>
-              </>
-            )}
+            <Card>
+              <CardContent className="py-10">
+                <EmptyState
+                  icon={<ArrowUpRight className="size-5" aria-hidden="true" />}
+                  title="Crypto withdrawals are not currently available for this account."
+                  description="No on-chain custody provider or address-validation flow is configured, so withdrawal controls remain disabled."
+                />
+              </CardContent>
+            </Card>
           </div>
         )}
 

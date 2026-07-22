@@ -1,20 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { Manrope, IBM_Plex_Mono } from "next/font/google";
 import "./global.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-inter-sans",
-  display: "swap"
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-ibm-plex-mono",
-  display: "swap"
-});
 
 export const metadata: Metadata = {
   title: "Neptlium | Institutional Capital Operating System",
@@ -27,7 +13,7 @@ export default function RootLayout({
   readonly children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <html lang="en" className={`${manrope.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en">
       <body className="antialiased">{children}</body>
     </html>
   );

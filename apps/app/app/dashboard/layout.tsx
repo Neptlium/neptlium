@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AppShell, MobileNavigation, Sidebar } from "@netlium/ui";
+import { AppShell, MobileNavigation, ProfileMenu, Sidebar } from "@netlium/ui";
 import { dashboardNavItems } from "@/components/navigation/dashboardNav";
 import { filterNavByRole } from "@/components/security/filterNavByRole";
 import { resolveRole } from "@/components/security/resolveRole";
@@ -13,12 +13,20 @@ export default async function DashboardLayout({ children }: { readonly children:
 
   const displayName = profile?.fullName ?? profile?.email ?? user.email ?? "Account";
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+  const accountMenu = (
+    <ProfileMenu
+      displayName={displayName}
+      email={profile?.email ?? user.email ?? ""}
+      verified={Boolean(user.email_confirmed_at)}
+      signOut={<SignOutButton />}
+    />
+  );
+
   const sessionFooter = (
-    <div className="space-y-2">
-      <div className="px-2">
-        <p className="truncate text-body-sm font-medium text-text-primary">{displayName}</p>
-        <p className="truncate text-[11px] text-text-muted">{roleLabel}</p>
-      </div>
+    <div className="space-y-2 px-1">
+      <p className="truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+        {roleLabel}
+      </p>
       <SignOutButton />
     </div>
   );
@@ -27,7 +35,8 @@ export default async function DashboardLayout({ children }: { readonly children:
     <AppShell
       sidebar={<Sidebar items={navItems} />}
       sidebarFooter={sessionFooter}
-      mobileNav={<MobileNavigation items={navItems} footer={sessionFooter} />}
+      mobileNav={<MobileNavigation items={navItems} footer={sessionFooter} profile={accountMenu} />}
+      utilityHeader={accountMenu}
     >
       {children}
     </AppShell>

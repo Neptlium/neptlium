@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "../components/utils/cn";
 import { NeptliumMark } from "./NeptliumMark";
@@ -10,7 +10,7 @@ import type { NavItem } from "./Sidebar";
 
 const DRAWER_ID = "dashboard-mobile-navigation";
 const BRAND_WORDMARK = "NEPTLIUM";
-const DRAWER_WIDTH = "min(88vw,22.5rem)";
+const DRAWER_WIDTH = "min(90vw,23rem)";
 const DRAWER_MAX_WIDTH = "calc(100vw - 0.75rem)";
 const DRAWER_SAFE_AREA_PADDING = "max(env(safe-area-inset-bottom), 0.75rem)";
 const DRAWER_SAFE_AREA_TOP_PADDING = "max(env(safe-area-inset-top), 0.75rem)";
@@ -27,20 +27,14 @@ function isItemActive(pathname: string, href: string): boolean {
 export interface MobileNavigationProps {
   readonly items: readonly NavItem[];
   readonly footer?: ReactNode;
+  readonly profile?: ReactNode;
 }
 
-export function MobileNavigation({ items, footer }: MobileNavigationProps) {
+export function MobileNavigation({ items, footer, profile }: MobileNavigationProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
-
-  const title = useMemo(() => {
-    const active = [...items]
-      .sort((a, b) => b.href.length - a.href.length)
-      .find((item) => isItemActive(pathname, item.href));
-    return active?.label ?? "Dashboard";
-  }, [items, pathname]);
 
   useEffect(() => {
     setOpen(false);
@@ -103,7 +97,11 @@ export function MobileNavigation({ items, footer }: MobileNavigationProps) {
 
   return (
     <>
-      <div className="flex h-full items-center gap-2 px-2 sm:px-3">
+      <div className="flex h-full items-center gap-2 px-4">
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
+          <NeptliumMark size={24} />
+          <span className="text-body-sm font-semibold tracking-tight text-text-primary">Neptlium</span>
+        </div>
         <button
           ref={triggerRef}
           type="button"
@@ -115,9 +113,8 @@ export function MobileNavigation({ items, footer }: MobileNavigationProps) {
         >
           <Menu className="size-5" aria-hidden="true" />
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-body-sm font-semibold tracking-tight text-text-primary">
-          {title}
-        </h1>
+        <div className="min-w-0 flex-1" />
+        {profile}
       </div>
 
       <div

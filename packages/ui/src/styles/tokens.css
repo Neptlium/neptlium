@@ -103,11 +103,13 @@
   --color-status-offline: #64748b;
 
   /* ---- Typography ----
-     --font-inter-sans / --font-ibm-plex-mono are set by next/font (via its `variable`
-     option) on <html> in the consuming app; these theme keys just reference them with
-     a static fallback for contexts where next/font hasn't loaded (e.g. Storybook). */
-  --font-sans: var(--font-inter-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+     Offline-safe font variables. Manrope / IBM Plex Mono remain first-choice
+     family names for deployments that self-host or provide them locally, but the
+     production build no longer depends on remote font CSS. */
+  --font-inter-sans: "Manrope", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-ibm-plex-mono: "IBM Plex Mono", "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", ui-monospace, monospace;
+  --font-sans: var(--font-inter-sans);
+  --font-mono: var(--font-ibm-plex-mono);
 
   /* Display: gateway, major onboarding titles, portfolio total value only —
      never a section heading. */
